@@ -31,6 +31,9 @@ namespace VesselCalc.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<decimal>("MaxTemperatureLimit")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<decimal>("MinTensileStrength")
                         .HasColumnType("decimal(18,2)");
 

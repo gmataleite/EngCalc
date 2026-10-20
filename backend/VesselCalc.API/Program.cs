@@ -13,15 +13,13 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    
-    // Opcional: Garante que as migrations foram aplicadas no banco
     context.Database.Migrate();
 
-    var csvPath = Path.Combine(Directory.GetCurrentDirectory(), "SeedData", "materials.csv");
-    
-    if (File.Exists(csvPath))
+    var seedDir = Path.Combine(AppContext.BaseDirectory, "Data", "Seed");
+    if (Directory.Exists(seedDir))
     {
-        await DatabaseSeeder.SeedMaterialsAsync(context, csvPath);
+        foreach (var file in Directory.GetFiles(seedDir, "*.csv"))
+            await DatabaseSeeder.SeedMaterialsAsync(context, file);
     }
 }
 // === FIM DO ESCOPO ===

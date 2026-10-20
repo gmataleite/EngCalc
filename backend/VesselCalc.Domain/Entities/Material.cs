@@ -8,6 +8,7 @@ namespace VesselCalc.Domain.Entities
         public string? ProductForm { get; private set; }
         public decimal MinTensileStrength { get; private set; }
         public decimal MinYieldStrength { get; private set; }
+        public decimal MaxTemperatureLimit { get; private set; }
         public string? Notes { get; private set; }
 
         private readonly List<MaterialTemperatureProperty> _temperatureProperties = new();
@@ -18,7 +19,9 @@ namespace VesselCalc.Domain.Entities
         protected Material() { }
         #pragma warning restore CS8618
 
-        public Material(string materialId, string specification, string? grade, string? productForm, decimal minTensile, decimal minYield, string? notes = null)
+        public Material(string materialId, string specification, string? grade,
+            string? productForm, decimal minTensile, decimal minYield,
+            decimal maxTemperatureLimit, string? notes = null)
         {
             MaterialId = materialId;
             Specification = specification;
@@ -26,6 +29,7 @@ namespace VesselCalc.Domain.Entities
             ProductForm = productForm;
             MinTensileStrength = minTensile;
             MinYieldStrength = minYield;
+            MaxTemperatureLimit = maxTemperatureLimit;
             Notes = notes;
         }
 
@@ -40,6 +44,8 @@ namespace VesselCalc.Domain.Entities
         // Interpolação linear conforme ASME II-D
         public decimal? GetAllowableStress(decimal temperature)
         {
+            if (temperature > MaxTemperatureLimit) return null;
+
             var points = _temperatureProperties
                 .Where(p => p.AllowableStress.HasValue)
                 .OrderBy(p => p.Temperature)

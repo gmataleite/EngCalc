@@ -6,25 +6,31 @@ namespace VesselCalc.Infrastructure.Data;
 
 public static class DatabaseSeeder
 {
-    private static readonly decimal[] Temperatures = { 100, 200, 300, 400, 500, 600, 700, 800 };
+    private static readonly decimal[] Temperatures =
+        { 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000 };
 
-    private const int FirstStressColumn = 6;                                // S100
-    private const int FirstYieldColumn = FirstStressColumn + 8;             // Y100
-    private const int MinColumns = FirstStressColumn + 8;                   // 14 (Y é opcional)
+    // 0 MaterialId | 1 Specification | 2 Grade | 3 ProductForm
+    // 4 MinTensile | 5 MinYield | 6 MaxTemp | 7..16 S100..S1000 | 17..26 Y100..Y1000
+    private const int MaxTempColumn = 6;
+    private const int FirstStressColumn = 7;
+    private static readonly int FirstYieldColumn = FirstStressColumn + Temperatures.Length;
+    private static readonly int MinColumns = FirstStressColumn + Temperatures.Length; // Y é opcional
 
     public static async Task SeedMaterialsAsync(ApplicationDbContext context, string csvFilePath)
     {
-        if (await context.Materials.AnyAsync())
-            return;
-
         if (!File.Exists(csvFilePath))
             throw new FileNotFoundException("CSV de materiais não encontrado.", csvFilePath);
 
+        var existingIds = (await context.Materials
+                .Select(m => m.MaterialId)
+                .ToListAsync())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var lines = await File.ReadAllLinesAsync(csvFilePath);
         var materials = new List<Material>();
-        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var idsInFile = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        for (int i = 1; i < lines.Length; i++) // pula o cabeçalho
+        for (int i = 1; i < lines.Length; i++)
         {
             if (string.IsNullOrWhiteSpace(lines[i])) continue;
 
@@ -33,8 +39,11 @@ public static class DatabaseSeeder
                 throw new FormatException($"Linha {i + 1}: esperadas pelo menos {MinColumns} colunas, encontradas {c.Length}.");
 
             var materialId = c[0].ToUpperInvariant();
-            if (!ids.Add(materialId))
+
+            if (!idsInFile.Add(materialId))
                 throw new FormatException($"Linha {i + 1}: MaterialId duplicado '{materialId}'.");
+
+            if (existingIds.Contains(materialId)) continue;
 
             var material = new Material(
                 materialId: materialId,
@@ -42,14 +51,13 @@ public static class DatabaseSeeder
                 grade: NullIfEmpty(c[2]),
                 productForm: NullIfEmpty(c[3]),
                 minTensile: ParseDecimal(c[4], i),
-                minYield: ParseDecimal(c[5], i));
+                minYield: ParseDecimal(c[5], i),
+                maxTemperatureLimit: ParseDecimal(c[MaxTempColumn], i));
 
             for (int t = 0; t < Temperatures.Length; t++)
             {
                 var allowable = ParseNullableDecimal(GetCell(c, FirstStressColumn + t), i);
                 var yield = ParseNullableDecimal(GetCell(c, FirstYieldColumn + t), i);
-
-                // se ambos são nulos, não há o que gravar para essa temperatura
                 if (allowable is null && yield is null) continue;
 
                 material.AddTemperaturePoint(Temperatures[t], allowable, yield);
@@ -58,15 +66,15 @@ public static class DatabaseSeeder
             materials.Add(material);
         }
 
-        await context.Materials.AddRangeAsync(materials);
+        if (materials.Count == 0) return;
+
+        context.Materials.AddRange(materials);
         await context.SaveChangesAsync();
     }
 
-    // colunas Y podem nem existir na linha
     private static string GetCell(string[] cols, int index) =>
         index < cols.Length ? cols[index] : string.Empty;
 
-    // vazio ou "None" => null
     private static string? NullIfEmpty(string s) =>
         string.IsNullOrWhiteSpace(s) || s.Equals("None", StringComparison.OrdinalIgnoreCase) ? null : s;
 
@@ -77,7 +85,6 @@ public static class DatabaseSeeder
         return value;
     }
 
-    // vazio, "NP" e "---" => null
     private static decimal? ParseNullableDecimal(string s, int line)
     {
         if (string.IsNullOrWhiteSpace(s) ||

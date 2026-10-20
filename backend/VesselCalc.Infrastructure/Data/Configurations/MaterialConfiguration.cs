@@ -17,6 +17,7 @@ public class MaterialConfiguration : IEntityTypeConfiguration<Material>
         builder.Property(m => m.ProductForm).HasMaxLength(50);
         builder.Property(m => m.MinTensileStrength).HasColumnType("decimal(18,2)");
         builder.Property(m => m.MinYieldStrength).HasColumnType("decimal(18,2)");
+        builder.Property(m => m.MaxTemperatureLimit).HasColumnType("decimal(18,2)");
         builder.Property(m => m.Notes).HasMaxLength(255);
 
         builder.HasMany(m => m.TemperatureProperties)
