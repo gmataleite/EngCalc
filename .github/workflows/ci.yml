@@ -46,7 +46,7 @@ jobs:
         run: dotnet restore VesselCalc.sln
         
       - name: Build
-        run: dotnet build VesselCalc.slnx --no-restore --configuration Release
+        run: dotnet build VesselCalc.sln --no-restore --configuration Release
 
       - name: Test
         run: dotnet test VesselCalc.Tests/VesselCalc.Tests.csproj --no-build --configuration Release --verbosity normal
