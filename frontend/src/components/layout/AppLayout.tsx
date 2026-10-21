@@ -37,6 +37,19 @@ export default function AppLayout() {
             >
               Shell Thickness (UG-27)
             </NavLink>
+            <NavLink
+              to="/calculations/head-thickness"
+              className={({ isActive }) =>
+                cn(
+                  "transition-colors hover:text-foreground",
+                  isActive
+                    ? "font-medium text-foreground"
+                    : "text-muted-foreground"
+                )
+              }
+            >
+              Formed Heads (UG-32)
+            </NavLink>
           </nav>
         </div>
       </header>
