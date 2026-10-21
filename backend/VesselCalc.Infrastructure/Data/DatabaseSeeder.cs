@@ -14,19 +14,14 @@ public static class DatabaseSeeder
     private const int MaxTempColumn = 6;
     private const int FirstStressColumn = 7;
     private static readonly int FirstYieldColumn = FirstStressColumn + Temperatures.Length;
-    private static readonly int MinColumns = FirstStressColumn + Temperatures.Length; // Y é opcional
+    private static readonly int MinColumns = FirstStressColumn + Temperatures.Length; // Y is optional
 
-    public static async Task SeedMaterialsAsync(ApplicationDbContext context, string csvFilePath)
+    public static async Task<List<Material>> ParseMaterialsFromCsvAsync(string csvFilePath, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(csvFilePath))
-            throw new FileNotFoundException("CSV de materiais não encontrado.", csvFilePath);
+            throw new FileNotFoundException("Materials CSV file not found.", csvFilePath);
 
-        var existingIds = (await context.Materials
-                .Select(m => m.MaterialId)
-                .ToListAsync())
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var lines = await File.ReadAllLinesAsync(csvFilePath);
+        var lines = await File.ReadAllLinesAsync(csvFilePath, cancellationToken);
         var materials = new List<Material>();
         var idsInFile = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -36,14 +31,12 @@ public static class DatabaseSeeder
 
             var c = lines[i].Split(';').Select(x => x.Trim()).ToArray();
             if (c.Length < MinColumns)
-                throw new FormatException($"Linha {i + 1}: esperadas pelo menos {MinColumns} colunas, encontradas {c.Length}.");
+                throw new FormatException($"Line {i + 1}: expected at least {MinColumns} columns, found {c.Length}.");
 
             var materialId = c[0].ToUpperInvariant();
 
             if (!idsInFile.Add(materialId))
-                throw new FormatException($"Linha {i + 1}: MaterialId duplicado '{materialId}'.");
-
-            if (existingIds.Contains(materialId)) continue;
+                throw new FormatException($"Line {i + 1}: duplicate MaterialId '{materialId}'.");
 
             var material = new Material(
                 materialId: materialId,
@@ -66,9 +59,25 @@ public static class DatabaseSeeder
             materials.Add(material);
         }
 
-        if (materials.Count == 0) return;
+        return materials;
+    }
 
-        context.Materials.AddRange(materials);
+    public static async Task SeedMaterialsAsync(ApplicationDbContext context, string csvFilePath)
+    {
+        var parsedMaterials = await ParseMaterialsFromCsvAsync(csvFilePath);
+
+        var existingIds = (await context.Materials
+                .Select(m => m.MaterialId)
+                .ToListAsync())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var newMaterials = parsedMaterials
+            .Where(m => !existingIds.Contains(m.MaterialId))
+            .ToList();
+
+        if (newMaterials.Count == 0) return;
+
+        context.Materials.AddRange(newMaterials);
         await context.SaveChangesAsync();
     }
 
@@ -81,7 +90,7 @@ public static class DatabaseSeeder
     private static decimal ParseDecimal(string s, int line)
     {
         if (!decimal.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
-            throw new FormatException($"Linha {line + 1}: valor numérico inválido '{s}'.");
+            throw new FormatException($"Line {line + 1}: invalid numeric value '{s}'.");
         return value;
     }
 

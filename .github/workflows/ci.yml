@@ -14,10 +14,10 @@ jobs:
         - name: Checkout Repository
           uses: actions/checkout@v4
 
-        - name: Check for sensitive files
+        - name: Check for sensitive files and hardcoded secrets
           run: |
             # Searches for sensitive files ignoring .env.example or .template
-            SENSITIVE_FILES=$(git ls-files | grep -iE '(\.env$|\.env\.|secrets\.json|\.pem$|\.pfx$|\.key$|\.sqlite$|\.db$)' | grep -v -iE '(\.example$|\.template$)' || true)
+            SENSITIVE_FILES=$(git ls-files | grep -iE '(\.env$|\.env\.|secrets\.json|appsettings\..*\.local\.json|\.pem$|\.pfx$|\.key$|\.sqlite$|\.db$)' | grep -v -iE '(\.example$|\.template$)' || true)
             
             if [ -n "$SENSITIVE_FILES" ]; then
               echo "::error::Sensitive files detected in the repository!"
@@ -25,7 +25,15 @@ jobs:
               echo "Remove these files from version control and add them to .gitignore."
               exit 1
             fi
-            echo "No sensitive files detected."
+
+            # Prevent hardcoded passwords in tracked appsettings*.json files
+            HARDCODED_CREDS=$(git grep -iE '(Password|Pwd)\s*=\s*[^;"\s]+' -- '**/appsettings*.json' 'appsettings*.json' || true)
+            if [ -n "$HARDCODED_CREDS" ]; then
+              echo "::error::Hardcoded credentials detected in appsettings files! Use User Secrets or Environment Variables instead."
+              echo "$HARDCODED_CREDS"
+              exit 1
+            fi
+            echo "No sensitive files or hardcoded credentials detected."
 
   backend:
     name: .NET Backend Build & Test
@@ -71,8 +79,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      # - name: Lint
-      #   run: npm run lint
+      - name: Check code formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
 
       # - name: Test
       #   run: npm run test
