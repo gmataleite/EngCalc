@@ -1,4 +1,4 @@
-﻿namespace VesselCalc.Domain;
+namespace VesselCalc.Domain;
 
 using VesselCalc.Domain.Constants;
 using VesselCalc.Domain.Common;
@@ -61,6 +61,18 @@ public class CylindricalShell
 
     public Length CalculateMinimumRequiredThickness() // ASME VIII Div. 1, UG-27
     {
+        var (circumferentialThickness, longitudinalThickness, _, _) = CalculateDetailedThicknesses();
+
+        double maxRequiredThicknessMm = Math.Max(circumferentialThickness.Millimeters, longitudinalThickness.Millimeters);
+
+        return Length.FromMillimeters(maxRequiredThicknessMm) + _allowableCorrosion;
+    }
+
+    public (Length CircumferentialThickness, Length LongitudinalThickness, bool IsCircumferentialThick, bool IsLongitudinalThick) CalculateDetailedThicknesses()
+    {
+        bool isCircThick = IsThickShellByPressureLimit(StressType.Circumferential);
+        bool isLongThick = IsThickShellByPressureLimit(StressType.Longitudinal);
+
         Length circumferentialThickness = CalculateThicknessForStressType(StressType.Circumferential);
         Length longitudinalThickness = CalculateThicknessForStressType(StressType.Longitudinal);
 
@@ -68,13 +80,13 @@ public class CylindricalShell
 
         if (maxRequiredThicknessMm > InternalRadius.Millimeters / 2.0)
         {
+            isCircThick = true;
+            isLongThick = true;
             circumferentialThickness = new CircumferentialThickShellCalculator().CalculateThickness(EffectivePressure, InternalRadius, _allowableStress, _jointEfficiency);
             longitudinalThickness = new LongitudinalThickShellCalculator().CalculateThickness(EffectivePressure, InternalRadius, _allowableStress, _jointEfficiency);
-
-            maxRequiredThicknessMm = Math.Max(circumferentialThickness.Millimeters, longitudinalThickness.Millimeters);
         }
 
-        return Length.FromMillimeters(maxRequiredThicknessMm) + _allowableCorrosion;
+        return (circumferentialThickness, longitudinalThickness, isCircThick, isLongThick);
     }
 
     private Length CalculateThicknessForStressType(StressType type)
@@ -96,9 +108,8 @@ public class CylindricalShell
     }
         
     private bool IsThickShellByPressureLimit(StressType type) 
-        {
-            double limitFactor = type == StressType.Circumferential ? 0.385 : 1.25;
-            return EffectivePressure > limitFactor * _allowableStress * _jointEfficiency;
-        }
-
+    {
+        double limitFactor = type == StressType.Circumferential ? 0.385 : 1.25;
+        return EffectivePressure > limitFactor * _allowableStress * _jointEfficiency;
+    }
 }

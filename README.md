@@ -1,32 +1,58 @@
 # Vessel-Calc
 
-**Vessel-Calc** é uma aplicação web SaaS (Software as a Service) projetada para engenheiros e projetistas mecânicos autônomos. O sistema realiza o dimensionamento rigoroso de vasos de pressão baseado no código **ASME Boiler and Pressure Vessel Code (BPVC) Seção VIII, Divisão 1**, culminando na geração automatizada de memoriais de cálculo exportáveis.
+**Vessel-Calc** is a web-based SaaS (Software as a Service) application designed for mechanical and pressure vessel engineers. The platform performs rigorous pressure vessel design calculations based on the **ASME Boiler and Pressure Vessel Code (BPVC) Section VIII, Division 1**, culminating in automated, exportable engineering calculation reports.
 
-Este projeto alia experiência prática em engenharia mecânica a padrões modernos de desenvolvimento de software, demonstrando a aplicação de **Domain-Driven Design (DDD)** para modelar domínios matemáticos e normativos complexos.
+This project combines practical mechanical engineering expertise with modern software engineering practices, applying **Domain-Driven Design (DDD)** and **Clean Architecture** to model complex normative and mathematical rules.
 
-## 🚀 Arquitetura e Stack Tecnológica
+## 🚀 Architecture & Tech Stack
 
-O projeto foi estruturado seguindo os princípios da **Clean Architecture**, garantindo total isolamento entre as regras de negócio da norma ASME, a infraestrutura de dados e a interface do usuário.
+The project follows **Clean Architecture** principles, ensuring strict isolation between ASME normative domain rules, data persistence infrastructure, and the user interface.
 
-* **Linguagem & Framework:** C# / .NET 9 (ASP.NET Core Web API)
-* **Front-end:** Blazor WebAssembly
-* **Banco de Dados:** SQL Server
-* **ORM:** Entity Framework Core
-* **Testes:** xUnit (Foco em testes unitários para o motor de cálculo)
-* **Utilitários de Domínio:** UnitsNet (Garantia de consistência e conversão de grandezas físicas no SI)
-* **CI/CD:** GitHub Actions com provisionamento via Docker.
+* **Backend Language & Framework:** C# / .NET 9 (ASP.NET Core Web API)
+* **Frontend:** React 19 + Vite + TypeScript + Tailwind CSS v4 + shadcn/ui + TanStack Query + React Hook Form + Zod + KaTeX
+* **Database:** PostgreSQL 17 (with seeded ASME Section II Part D CSV fallback)
+* **ORM:** Entity Framework Core (Npgsql)
+* **Testing:** xUnit (Unit tests covering the ASME calculation engine)
+* **Domain Utilities:** UnitsNet (Dimensional consistency and SI/Imperial unit conversions)
+* **CI/CD:** GitHub Actions with Docker service provisioning
 
-## ⚙️ Funcionalidades Principais
+## ⚙️ Core Features
 
-* **Motor de Cálculo ASME:** Dimensionamento de espessuras de cascos cilíndricos considerando pressões internas e hidrostáticas (Regras UG-27 e Mandatory Appendix 1-2).
-* **Gestão de Materiais Híbrida:** Banco de dados integrado com materiais padronizados do ASME BPVC Seção II-D, com suporte para cadastro de materiais customizados pelo projetista.
-* **Geração de Relatórios:** Emissão de memorial de cálculo documentando o passo a passo algébrico e as referências normativas adotadas.
+* **ASME Calculation Engine:** Minimum required wall thickness sizing for cylindrical shells under internal and hydrostatic pressure (UG-27 and Mandatory Appendix 1-2).
+* **Hybrid Material Database:** Built-in standardized materials from ASME BPVC Section II Part D (Table 1A) with linear temperature interpolation and manual allowable stress override.
+* **Interactive Real-Time Calculator UI:** Single-page reactive calculation workflow with debounced updates, unit system switching (Metric / Imperial), and rendered LaTeX equations.
 
-## 🛠️ Como Executar Localmente (Ambiente de Desenvolvimento)
+## 🛠️ Running Locally (Development Environment)
 
-A infraestrutura local utiliza contêineres Docker para o banco de dados e o Entity Framework Core para o mapeamento objeto-relacional.
+### 1. Start the Database (Optional — Docker PostgreSQL)
 
-### 1. Subindo o Banco de Dados (Docker)
-É necessário ter o Docker instalado. Execute o comando abaixo para iniciar o contêiner do SQL Server:
+From the `infra/` directory, copy `.env.example` to `.env` (if not already present) and start the PostgreSQL container:
+
 ```bash
-docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=VesselCalc@2026!" -p 1433:1433 --name sql_server_vesselcalc -d [mcr.microsoft.com/mssql/server:2022-latest](https://mcr.microsoft.com/mssql/server:2022-latest)
+cd infra
+docker compose -f docker-compose.dev.yml up -d
+```
+
+> **Note:** If PostgreSQL is not running locally, the API automatically falls back to reading the seeded ASME materials directly from `Data/Seed/materials.csv`.
+
+### 2. Run the Backend (.NET 9 Web API)
+
+```bash
+cd backend/VesselCalc.API
+dotnet run
+```
+
+The API will start on `http://localhost:5293` and expose:
+- `GET /api/materials`
+- `GET /api/calculations/shell-thickness/options`
+- `POST /api/calculations/shell-thickness`
+
+### 3. Run the Frontend (React + Vite)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser and navigate to **Shell Thickness (UG-27)** (`/calculations/shell-thickness`).

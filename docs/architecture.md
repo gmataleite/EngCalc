@@ -1,30 +1,26 @@
-# Arquitetura do Sistema
+# System Architecture
 
-O **Vessel-Calc** utiliza a **Clean Architecture** para gerenciar a complexidade inerente aos cálculos de engenharia da norma ASME. O objetivo desta topologia é garantir que o Motor de Cálculo (Domínio) seja independente de frameworks web, interfaces de usuário ou bancos de dados.
+**Vessel-Calc** uses **Clean Architecture** to manage the complexity inherent in ASME engineering calculations. The goal of this topology is to ensure that the Calculation Engine (Domain) remains independent of web frameworks, user interfaces, and databases.
 
-## Estrutura da Solução
+## Solution Structure
 
-O repositório reflete as seguintes camadas:
+The repository is organized into the following layers:
 
-1.  **VesselCalc.Domain (Núcleo):**
-    * Contém as entidades de engenharia (`CylindricalShell`, `Head`, `Material`), *Value Objects* e interfaces estruturais (`IMaterialRepository`).
-    * **Nenhuma dependência externa** (exceto a biblioteca `UnitsNet` para rigor dimensional).
-    * Utiliza o padrão *Strategy* para alternar dinamicamente entre equações de cascos finos (UG-27) e cascos espessos (App 1-2).
+1. **VesselCalc.Domain (Core):**
+   * Contains engineering entities (`CylindricalShell`, `EllipsoidalHead`, `HemisphericalHead`, `TorisphericalHead`, `Material`), Value Objects, and calculation interfaces (`IShellThicknessCalculator`).
+   * **Zero external framework dependencies** (only `UnitsNet` for strict dimensional safety).
+   * Uses the **Strategy** pattern to dynamically switch between thin-shell equations (UG-27) and thick-shell equations (Mandatory Appendix 1-2).
 
-2.  **VesselCalc.Application (Casos de Uso):**
-    * Orquestra os fluxos do usuário. Contém os *Command/Query Handlers*, DTOs e serviços de cálculo que conectam os dados externos (como as tensões admissíveis) às equações do Domínio.
+2. **VesselCalc.Application (Use Cases):**
+   * Orchestrates user workflows. Contains DTOs, service interfaces (`IShellThicknessService`, `IMaterialProvider`), unit system conversions, ASME Table UW-12 joint efficiency resolution, and calculation services that connect material allowable stresses to Domain equations.
 
-3.  **VesselCalc.Infrastructure (Adaptadores Externos):**
-    * Implementa o acesso a dados via **Entity Framework Core** com provedor **SQL Server**.
-    * Gerencia a carga inicial de dados normativos (Data Seeding) a partir de arquivos estáticos (ASME Section II Part D).
-    * Responsável pelas integrações com bibliotecas de geração de PDF (Memorial de Cálculo) e serviços de e-mail.
+3. **VesselCalc.Infrastructure (External Adapters):**
+   * Implements data access via **Entity Framework Core** with the **PostgreSQL (Npgsql)** provider.
+   * Manages initial normative data seeding (`DatabaseSeeder`) from static CSV files (ASME Section II Part D) and provides a resilient CSV fallback when running without a database container.
 
-4.  **VesselCalc.API (Apresentação Back-end):**
-    * Pontos de entrada HTTP (Controllers/Minimal APIs) protegidos por autenticação.
+4. **VesselCalc.API (Backend Presentation):**
+   * ASP.NET Core Web API REST endpoints (`/api/materials`, `/api/calculations/shell-thickness`) with CORS configured for the React SPA.
 
-5.  **VesselCalc.Web (Apresentação Front-end):**
-    * SPA desenvolvida em **Blazor**, consumindo a API REST de forma reativa.
-
-## Fluxo de Geração do Memorial
-
-O Front-end envia um DTO com os parâmetros de entrada. A camada de `Application` busca os materiais e as tensões interpoladas na `Infrastructure`, instancia as entidades no `Domain`, executa os métodos de cálculo (`CalculateMinimumRequiredThickness()`), gera um modelo de relatório em memória e delega a renderização do PDF para o gerador injetado na Infraestrutura.
+5. **frontend (Frontend Presentation):**
+   * Single Page Application (SPA) built with **React + Vite + TypeScript + Tailwind CSS v4 + shadcn/ui**, consuming the REST API reactively via TanStack Query.
+   * Contains zero engineering calculation formulas; all normative math executes exclusively in `VesselCalc.Domain`.

@@ -488,3 +488,11 @@ dist/
 .env
 .venv/
 __pycache__/
+
+# Environment and local secret files
+.env.*
+!.env.example
+!.env.template
+appsettings.*.local.json
+appsettings.Local.json
+secrets.json
