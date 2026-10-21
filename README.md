@@ -18,7 +18,9 @@ The project follows **Clean Architecture** principles, ensuring strict isolation
 
 ## ⚙️ Core Features
 
-* **ASME Calculation Engine:** Minimum required wall thickness sizing for cylindrical shells under internal and hydrostatic pressure (UG-27 and Mandatory Appendix 1-2).
+* **ASME Calculation Engine:**
+  * Cylindrical shells under internal pressure (`UG-27` and Mandatory Appendix 1-2).
+  * Formed heads (Ellipsoidal, Torispherical, and Hemispherical) under internal pressure (`UG-32` and Mandatory Appendix 1-3 / 1-4).
 * **Hybrid Material Database:** Built-in standardized materials from ASME BPVC Section II Part D (Table 1A) with linear temperature interpolation and manual allowable stress override.
 * **Interactive Real-Time Calculator UI:** Single-page reactive calculation workflow with debounced updates, unit system switching (Metric / Imperial), and rendered LaTeX equations.
 
@@ -46,6 +48,8 @@ The API will start on `http://localhost:5293` and expose:
 - `GET /api/materials`
 - `GET /api/calculations/shell-thickness/options`
 - `POST /api/calculations/shell-thickness`
+- `GET /api/calculations/head-thickness/options`
+- `POST /api/calculations/head-thickness`
 
 ### 3. Run the Frontend (React + Vite)
 
@@ -55,4 +59,6 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser and navigate to **Shell Thickness (UG-27)** (`/calculations/shell-thickness`).
+Open `http://localhost:5173` in your browser and navigate to:
+- **Shell Thickness (UG-27):** `/calculations/shell-thickness`
+- **Formed Heads (UG-32):** `/calculations/head-thickness`

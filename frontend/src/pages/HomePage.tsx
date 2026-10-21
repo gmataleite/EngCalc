@@ -45,6 +45,31 @@ export default function HomePage() {
             </Button>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Calculator className="size-4 text-primary" />
+              <CardTitle>Formed Heads (UG-32)</CardTitle>
+            </div>
+            <CardDescription>
+              Minimum required thickness of ellipsoidal, torispherical, and
+              hemispherical heads under internal pressure per ASME Section VIII
+              Div. 1, UG-32.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              nativeButton={false}
+              render={<Link to="/calculations/head-thickness" />}
+              variant="default"
+              className="w-full justify-between"
+            >
+              <span>Open Calculator</span>
+              <ArrowRight className="size-4" />
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
