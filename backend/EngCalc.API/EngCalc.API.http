@@ -1,0 +1,7 @@
+@EngCalc.API_HostAddress = http://localhost:5293
+
+GET {{EngCalc.API_HostAddress}}/api/materials
+Accept: application/json
+
+###
+

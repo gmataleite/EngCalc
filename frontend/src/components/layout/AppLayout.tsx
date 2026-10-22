@@ -7,7 +7,7 @@ export default function AppLayout() {
       <header className="border-b bg-card/50 px-6 py-3.5">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <Link to="/" className="text-lg font-bold tracking-tight">
-            VesselCalc
+            EngCalc
           </Link>
           <nav className="flex items-center gap-6 text-sm">
             <NavLink
@@ -25,7 +25,7 @@ export default function AppLayout() {
               Home
             </NavLink>
             <NavLink
-              to="/calculations/shell-thickness"
+              to="/pressure-vessels/shell-thickness"
               className={({ isActive }) =>
                 cn(
                   "transition-colors hover:text-foreground",
@@ -38,7 +38,7 @@ export default function AppLayout() {
               Shell Thickness (UG-27)
             </NavLink>
             <NavLink
-              to="/calculations/head-thickness"
+              to="/pressure-vessels/head-thickness"
               className={({ isActive }) =>
                 cn(
                   "transition-colors hover:text-foreground",

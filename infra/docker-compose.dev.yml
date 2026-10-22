@@ -2,7 +2,7 @@ services:
   postgres:
     image: postgres:17-alpine
 
-    container_name: vesselcalc_db
+    container_name: engcalc_db
 
     restart: unless-stopped
 
@@ -15,8 +15,7 @@ services:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
       
     volumes:
-      - vesselcalc_pgdata:/var/lib/postgresql/data
+      - engcalc_pgdata:/var/lib/postgresql/data
 
 volumes:
-  vesselcalc_pgdata:
-
+  engcalc_pgdata:
