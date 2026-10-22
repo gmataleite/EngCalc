@@ -13,4 +13,3 @@ export interface MaterialOption {
   productForm?: string | null
   maxTemperatureLimit?: number
 }
-
