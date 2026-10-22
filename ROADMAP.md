@@ -1,8 +1,8 @@
-# Vessel-Calc Roadmap
+# EngCalc Roadmap
 
-This document tracks the planned epics and milestones for the calculation engine and web application.
+This document tracks the planned epics and milestones for the **EngCalc** calculation engine and web application.
 
-## Phase 1: Core ASME VIII Div. 1 Domain (In Progress)
+## Module 1: Pressure Vessels — ASME VIII Div. 1 (`PressureVessels`)
 - [x] Cylindrical Shells — Minimum Required Thickness (UG-27 / Mandatory Appendix 1-2)
 - [ ] **To-Do:** Cylindrical Shells — Solve for Maximum Allowable Working Pressure (MAWP) (UG-27 / Appendix 1-2)
 - [ ] **To-Do:** Spherical Shells — Minimum Required Thickness & MAWP (UG-27(d) / Appendix 1-3)
@@ -11,21 +11,25 @@ This document tracks the planned epics and milestones for the calculation engine
 - [x] Hemispherical Heads — Minimum Required Thickness (UG-32(e) / Appendix 1-3)
 - [ ] **To-Do:** Conical Heads & Sections — Minimum Required Thickness & MAWP (UG-32(f) / Appendix 1-4)
 - [ ] **To-Do:** Formed Heads — Solve for Maximum Allowable Working Pressure (MAWP) (UG-32)
+- [ ] **External Pressure & Vacuum (UG-28 / UG-33):** Iterative algorithm for shell and head buckling verification
+- [ ] **Stiffening Rings (UG-29):** Required moment of inertia sizing for external pressure stiffening rings
 
-## Phase 2: Material Management & Data Persistence
+## Module 2: Shafts & Machine Elements (`Shafts`)
+- [ ] Solid & Hollow Shaft Sizing under combined torsion and bending (ASME B106.1M / Shigley)
+- [ ] Fatigue endurance limit & safety factor calculation (Goodman, Gerber, Soderberg, von Mises)
+- [ ] Keyway & Spline shear/bearing stress verification
+
+## Module 3: Structural Engineering (`Structures`)
+- [ ] Geometric Section Properties calculator (I-beam, channel, hollow rectangular/circular sections)
+- [ ] Beam deflection, shear force, and bending moment analysis
+- [ ] Column buckling verification (Euler / Johnson)
+
+## Module 4: Engineering Unit Conversions (`UnitConversions`)
+- [ ] Dedicated interactive unit conversion utility powered by `UnitsNet` (Pressure, Stress, Length, Force, Torque, Temperature, Density, Flow)
+
+## Shared Platform & Infrastructure
 - [x] Relational database schema and CSV seeding for ASME Section II Part D (Table 1A)
 - [x] Linear temperature interpolation for allowable stress ($S$)
-- [ ] EF Core query filters for multi-tenant isolation of user-defined custom materials
-
-## Phase 3: Presentation & Reporting
-- [x] Migration of frontend architecture from Blazor WebAssembly to React + Vite + TypeScript (ADR 0006)
-- [x] Page 01: Shell Thickness Under Internal Pressure (`UG-27`) in React
-- [x] Page 02: Formed Heads Under Internal Pressure (`UG-32` — Ellipsoidal, Torispherical, Hemispherical) in React
-- [ ] **To-Do:** Expose Spherical Shell and MAWP modes in the Shell Thickness (`UG-27`) page and API
-- [ ] **To-Do:** Expose Conical Head and MAWP modes in the Formed Heads (`UG-32`) page and API
+- [x] Modularization of solution from `VesselCalc` to `EngCalc`
 - [ ] Engineering Calculation Report generation in PDF (QuestPDF)
-
-## Phase 4: Structural Stability & Buckling
-- [ ] **External Pressure & Vacuum Module (UG-28 / UG-33):** Iterative algorithm for shell and head buckling verification
-- [ ] **ASME Section II-D Chart Digitization:** Bi-logarithmic interpolation service for Geometric Factor ($A$) and Material Factor ($B$) extraction
-- [ ] **Stiffening Rings (UG-29):** Required moment of inertia sizing for external pressure stiffening rings
+- [ ] Multi-tenant custom material library

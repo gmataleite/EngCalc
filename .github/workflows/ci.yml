@@ -51,13 +51,13 @@ jobs:
           dotnet-version: '9.0.x'
           
       - name: Restore dependencies
-        run: dotnet restore VesselCalc.sln
+        run: dotnet restore EngCalc.sln
         
       - name: Build
-        run: dotnet build VesselCalc.sln --no-restore --configuration Release
+        run: dotnet build EngCalc.sln --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test VesselCalc.Tests/VesselCalc.Tests.csproj --no-build --configuration Release --verbosity normal
+        run: dotnet test EngCalc.Tests/EngCalc.Tests.csproj --no-build --configuration Release --verbosity normal
 
   frontend:
     name: React Frontend Build & Test
