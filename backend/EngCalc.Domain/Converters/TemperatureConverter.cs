@@ -5,45 +5,45 @@ using EngCalc.Domain.Converters.Interfaces;
 using UnitsNet;
 public class TemperatureConverter : IConverter
 {
-    public double CalculatedTemperature { get; private set; }
+    public double ConvertedValue { get; private set; }
 
-    public TemperatureConverter(double initialTemperature, TemperatureUnits initialUnit, TemperatureUnits targetUnit)
+    public TemperatureConverter(double initialValue, TemperatureUnits initialUnit, TemperatureUnits targetUnit)
     {
-        ConvertValue(initialTemperature, initialUnit, targetUnit);
+        ConvertValue(initialValue, initialUnit, targetUnit);
     }
 
-    public double ConvertValue(double initialTemperature, Enum initialUnit, Enum targetUnit)
+    public double ConvertValue(double initialValue, Enum initialUnit, Enum targetUnit)
     {
         switch (initialUnit, targetUnit)
         {
         case (TemperatureUnits.Celsius, TemperatureUnits.Fahrenheit):
-            CalculatedTemperature = CelsiusToFahrenheit(initialTemperature);
+            ConvertedValue = CelsiusToFahrenheit(initialValue);
             break;
         case (TemperatureUnits.Fahrenheit, TemperatureUnits.Celsius):
-            CalculatedTemperature = FahrenheitToCelsius(initialTemperature);
+            ConvertedValue = FahrenheitToCelsius(initialValue);
             break;
         case (TemperatureUnits.Celsius, TemperatureUnits.Kelvin):
-            CalculatedTemperature = CelsiusToKelvin(initialTemperature);
+            ConvertedValue = CelsiusToKelvin(initialValue);
             break;
         case (TemperatureUnits.Fahrenheit, TemperatureUnits.Kelvin):
-            CalculatedTemperature = FahrenheitToKelvin(initialTemperature);
+            ConvertedValue = FahrenheitToKelvin(initialValue);
             break;
         case (TemperatureUnits.Kelvin, TemperatureUnits.Fahrenheit):
-            CalculatedTemperature = KelvinToFahrenheit(initialTemperature);
+            ConvertedValue = KelvinToFahrenheit(initialValue);
             break;
         case (TemperatureUnits.Kelvin, TemperatureUnits.Celsius):
-            CalculatedTemperature = KelvinToCelsius(initialTemperature);
+            ConvertedValue = KelvinToCelsius(initialValue);
             break;
         default:
             throw new ArgumentException("Invalid temperature units provided.");
         }
-        return CalculatedTemperature;
+        return ConvertedValue;
     }
 
-    public double CelsiusToFahrenheit(double initialTemperature) => Math.Round(Temperature.FromDegreesCelsius(initialTemperature).DegreesFahrenheit, 2);
-    public double FahrenheitToCelsius(double initialTemperature) => Math.Round(Temperature.FromDegreesFahrenheit(initialTemperature).DegreesCelsius, 2);
-    public double CelsiusToKelvin(double initialTemperature) => Math.Round(Temperature.FromDegreesCelsius(initialTemperature).Kelvins, 2);
-    public double FahrenheitToKelvin(double initialTemperature) => Math.Round(Temperature.FromDegreesFahrenheit(initialTemperature).Kelvins, 2);
-    public double KelvinToFahrenheit(double initialTemperature) => Math.Round(Temperature.FromKelvins(initialTemperature).DegreesFahrenheit, 2);
-    public double KelvinToCelsius(double initialTemperature) => Math.Round(Temperature.FromKelvins(initialTemperature).DegreesCelsius, 2);
+    public double CelsiusToFahrenheit(double initialValue) => Math.Round(Temperature.FromDegreesCelsius(initialValue).DegreesFahrenheit, 2);
+    public double FahrenheitToCelsius(double initialValue) => Math.Round(Temperature.FromDegreesFahrenheit(initialValue).DegreesCelsius, 2);
+    public double CelsiusToKelvin(double initialValue) => Math.Round(Temperature.FromDegreesCelsius(initialValue).Kelvins, 2);
+    public double FahrenheitToKelvin(double initialValue) => Math.Round(Temperature.FromDegreesFahrenheit(initialValue).Kelvins, 2);
+    public double KelvinToFahrenheit(double initialValue) => Math.Round(Temperature.FromKelvins(initialValue).DegreesFahrenheit, 2);
+    public double KelvinToCelsius(double initialValue) => Math.Round(Temperature.FromKelvins(initialValue).DegreesCelsius, 2);
 }

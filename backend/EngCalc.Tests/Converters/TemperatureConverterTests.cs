@@ -27,7 +27,7 @@ public class TemperatureConverterTests
         // Arrange
         
         // Act
-        var actualTemperature = new TemperatureConverter(initialTemperature, initialUnit, targetUnit).CalculatedTemperature;
+        var actualTemperature = new TemperatureConverter(initialTemperature, initialUnit, targetUnit).ConvertedValue;
 
         // Assert
         Assert.Equal(expectedTemperature, actualTemperature);
