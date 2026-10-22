@@ -1,11 +1,7 @@
-using System;
-using System.Collections.Generic;
-using UnitsNet;
-using Xunit;
-using EngCalc.Domain.Converters;
+using EngCalc.Domain.Converters.Models;
 using EngCalc.Domain.Converters.Enums;
 
-namespace EngCalc.Tests.TemperatureConverters;
+namespace EngCalc.Tests.Converters.TemperatureConverters;
 
 public class TemperatureConverterTests
 {

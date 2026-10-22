@@ -1,4 +1,4 @@
-namespace EngCalc.Domain.Converters;
+namespace EngCalc.Domain.Converters.Models;
 
 using EngCalc.Domain.Converters.Enums;
 using EngCalc.Domain.Converters.Interfaces;
