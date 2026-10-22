@@ -13,7 +13,7 @@ public class ConverterService
         
         if (!double.IsFinite(request.InitialValue) || request.InitialValue > double.MaxValue || request.InitialValue < double.MinValue)
         {
-            throw new ArgumentOutOfRangeException(nameof(request.InitialValue), $"{nameof(request.InitialValue)} must be a finite value greater than zero.");
+            throw new ArgumentOutOfRangeException($"Invalid initial value: {request.InitialValue}", nameof(request.InitialValue));
         }
 
         if (!Enum.TryParse<TemperatureUnits>(request.InitialUnit, true, out var initialUnit))

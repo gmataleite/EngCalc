@@ -29,4 +29,39 @@ public class TemperatureConverterTests
         Assert.Equal(expectedTemperature, actualTemperature);
     }
 
+    [Fact]
+    public void Convert_ShouldThrowArgumentOutOfRangeException_WhenInitialValueIsNotFinite()
+    {
+        // Arrange
+        var initialTemperature = double.NaN;
+        var initialUnit = TemperatureUnits.Celsius;
+        var targetUnit = TemperatureUnits.Fahrenheit;
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => new TemperatureConverter(initialTemperature, initialUnit, targetUnit));
+    }
+
+    [Fact]
+    public void Convert_ShouldThrowArgumentException_WhenInitialUnitIsInvalid()
+    {
+        // Arrange
+        var initialTemperature = 25.0;
+        var initialUnit = (TemperatureUnits)999; // Invalid value
+        var targetUnit = TemperatureUnits.Fahrenheit;
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => new TemperatureConverter(initialTemperature, initialUnit, targetUnit));
+    }
+
+    [Fact]
+    public void Convert_ShouldThrowArgumentException_WhenTargetUnitIsInvalid()
+    {
+        // Arrange
+        var initialTemperature = 25.0;
+        var initialUnit = TemperatureUnits.Celsius;
+        var targetUnit = (TemperatureUnits)999; // Invalid value
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => new TemperatureConverter(initialTemperature, initialUnit, targetUnit));
+    }
 }

@@ -9,6 +9,19 @@ public class TemperatureConverter : IConverter
 
     public TemperatureConverter(double initialValue, TemperatureUnits initialUnit, TemperatureUnits targetUnit)
     {
+        if (initialValue == double.NaN || initialValue > double.MaxValue || initialValue < double.MinValue)
+        {
+            throw new ArgumentOutOfRangeException($"Invalid initial value: {initialValue}", nameof(initialValue));
+        }
+        if (!Enum.IsDefined(typeof(TemperatureUnits), initialUnit))
+        {
+            throw new ArgumentException($"Invalid initial unit: {initialUnit}", nameof(initialUnit));
+        }
+        if (!Enum.IsDefined(typeof(TemperatureUnits), targetUnit))
+        {
+            throw new ArgumentException($"Invalid target unit: {targetUnit}", nameof(targetUnit));
+        }
+        
         ConvertValue(initialValue, initialUnit, targetUnit);
     }
 
