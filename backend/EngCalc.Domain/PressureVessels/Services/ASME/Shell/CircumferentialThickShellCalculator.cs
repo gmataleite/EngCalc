@@ -1,5 +1,6 @@
 namespace EngCalc.Domain.PressureVessels;
 
+using System;
 using UnitsNet;
 using UnitsNet.Units;
 
@@ -9,11 +10,16 @@ internal class CircumferentialThickShellCalculator : ShellCalculatorBase // ASME
     {
         var (P, R, S, E) = GetConstants(effectivePressure, internalRadius, allowableStress, jointEfficiency);
 
-        double Z = (S * E + P) / (S * E - P);
-        
+        double denominator = S * E - P;
+        if (denominator <= 0)
+        {
+            throw new InvalidOperationException(
+                "Effective design pressure (P) cannot equal or exceed the product of allowable stress and joint efficiency (S·E) per ASME Appendix 1-2.");
+        }
+
+        double Z = (S * E + P) / denominator;
         double thickness = R * (Math.Sqrt(Z) - 1);
 
         return Length.FromMillimeters(thickness);
     }
 }
-

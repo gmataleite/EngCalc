@@ -1,5 +1,3 @@
-using System.Globalization;
-using UnitsNet;
 using EngCalc.Application.Converters.DTOs;
 using EngCalc.Domain.Converters.Models;
 using EngCalc.Domain.Converters.Enums;
@@ -22,31 +20,39 @@ public class ConverterService : IConverterService
         return new ConverterOptionsDto(PhysicalPropertiesOptions);
     }
 
-    public async Task<ConverterResponseDto> ConvertAsync(ConverterRequestDto request)
+    public Task<ConverterResponseDto> ConvertAsync(ConverterRequestDto request)
     {
-        
-        if (!double.IsFinite(request.InitialValue) || request.InitialValue > double.MaxValue || request.InitialValue < double.MinValue)
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!double.IsFinite(request.InitialValue))
         {
-            throw new ArgumentOutOfRangeException($"Invalid initial value: {request.InitialValue}", nameof(request.InitialValue));
+            throw new ArgumentOutOfRangeException(nameof(request.InitialValue), $"Invalid initial value: {request.InitialValue}");
         }
 
-        switch (request.PhysicalPropertyType.ToLowerInvariant())
+        if (string.IsNullOrWhiteSpace(request.PhysicalPropertyType))
         {
-            case "temperature":
-                return ConvertTemperature(request);
-            default:
-                throw new NotSupportedException($"Physical property type '{request.PhysicalPropertyType}' is not supported.");
+            throw new ArgumentException("Physical property type is required.", nameof(request.PhysicalPropertyType));
         }
+
+        return request.PhysicalPropertyType.Trim().ToLowerInvariant() switch
+        {
+            "temperature" => Task.FromResult(ConvertTemperature(request)),
+            _ => throw new NotSupportedException($"Physical property type '{request.PhysicalPropertyType}' is not supported.")
+        };
     }
 
     public ConverterResponseDto ConvertTemperature(ConverterRequestDto request)
     {
-        if (!Enum.TryParse<TemperatureUnits>(request.InitialUnit, true, out var initialUnit))
+        if (string.IsNullOrWhiteSpace(request.InitialUnit) ||
+            !Enum.TryParse<TemperatureUnits>(request.InitialUnit, true, out var initialUnit) ||
+            !Enum.IsDefined(typeof(TemperatureUnits), initialUnit))
         {
             throw new ArgumentException($"Invalid initial unit: {request.InitialUnit}", nameof(request.InitialUnit));
         }
 
-        if (!Enum.TryParse<TemperatureUnits>(request.TargetUnit, true, out var targetUnit))
+        if (string.IsNullOrWhiteSpace(request.TargetUnit) ||
+            !Enum.TryParse<TemperatureUnits>(request.TargetUnit, true, out var targetUnit) ||
+            !Enum.IsDefined(typeof(TemperatureUnits), targetUnit))
         {
             throw new ArgumentException($"Invalid target unit: {request.TargetUnit}", nameof(request.TargetUnit));
         }
@@ -59,4 +65,3 @@ public class ConverterService : IConverterService
             ConvertedUnit: request.TargetUnit);
     }
 }
-

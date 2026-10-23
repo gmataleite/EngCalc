@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using EngCalc.Application.Materials.Interfaces;
 using EngCalc.Domain.Entities;
@@ -8,62 +9,112 @@ namespace EngCalc.Infrastructure.Repositories;
 
 public class MaterialProvider : IMaterialProvider
 {
+    private const string AllMaterialsCacheKey = "EngCalc:Materials:All";
+    private static readonly TimeSpan DbCacheDuration = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan FallbackCacheDuration = TimeSpan.FromMinutes(5);
+
     private readonly ApplicationDbContext _dbContext;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<MaterialProvider> _logger;
 
-    public MaterialProvider(ApplicationDbContext dbContext, ILogger<MaterialProvider> logger)
+    public MaterialProvider(
+        ApplicationDbContext dbContext,
+        IMemoryCache cache,
+        ILogger<MaterialProvider> logger)
     {
         _dbContext = dbContext;
+        _cache = cache;
         _logger = logger;
     }
 
     public async Task<IReadOnlyList<Material>> GetAllMaterialsAsync(CancellationToken cancellationToken = default)
     {
-        try
+        if (_cache.TryGetValue(AllMaterialsCacheKey, out IReadOnlyList<Material>? cached) && cached is not null)
         {
-            var dbMaterials = await _dbContext.Materials
-                .Include(m => m.TemperatureProperties)
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
+            return cached;
+        }
 
-            if (dbMaterials.Count > 0)
+        if (HasConfiguredConnectionString())
+        {
+            try
             {
-                return dbMaterials;
+                var dbMaterials = await _dbContext.Materials
+                    .Include(m => m.TemperatureProperties)
+                    .AsNoTracking()
+                    .ToListAsync(cancellationToken);
+
+                if (dbMaterials.Count > 0)
+                {
+                    _cache.Set(AllMaterialsCacheKey, (IReadOnlyList<Material>)dbMaterials, DbCacheDuration);
+                    return dbMaterials;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Database unreachable when querying materials ({Reason}); falling back to seeded CSV.", ex.GetType().Name);
             }
         }
-        catch (Exception ex)
+
+        var csvMaterials = await LoadSeededCsvMaterialsAsync(cancellationToken);
+        if (csvMaterials.Count > 0)
         {
-            _logger.LogWarning("Database unreachable when querying materials ({Reason}); falling back to seeded CSV.", ex.GetType().Name);
+            _cache.Set(AllMaterialsCacheKey, csvMaterials, FallbackCacheDuration);
         }
 
-        return await LoadSeededCsvMaterialsAsync(cancellationToken);
+        return csvMaterials;
     }
 
     public async Task<Material?> GetMaterialByIdAsync(string materialId, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(materialId)) return null;
-
-        try
+        if (string.IsNullOrWhiteSpace(materialId) || materialId.Length > 50)
         {
-            var material = await _dbContext.Materials
-                .Include(m => m.TemperatureProperties)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(
-                    m => m.MaterialId.ToUpper() == materialId.ToUpper(),
-                    cancellationToken);
+            return null;
+        }
 
-            if (material is not null)
+        string normalizedId = materialId.Trim().ToUpperInvariant();
+
+        if (_cache.TryGetValue(AllMaterialsCacheKey, out IReadOnlyList<Material>? cached) && cached is not null)
+        {
+            return cached.FirstOrDefault(m => string.Equals(m.MaterialId, normalizedId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (HasConfiguredConnectionString())
+        {
+            try
             {
-                return material;
+                var material = await _dbContext.Materials
+                    .Include(m => m.TemperatureProperties)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(
+                        m => m.MaterialId == normalizedId,
+                        cancellationToken);
+
+                if (material is not null)
+                {
+                    return material;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Database unreachable when querying material ({Reason}); falling back to seeded CSV.", ex.GetType().Name);
             }
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Database unreachable when querying material ({Reason}); falling back to seeded CSV.", ex.GetType().Name);
-        }
 
-        var csvMaterials = await LoadSeededCsvMaterialsAsync(cancellationToken);
-        return csvMaterials.FirstOrDefault(m => string.Equals(m.MaterialId, materialId, StringComparison.OrdinalIgnoreCase));
+        var allMaterials = await GetAllMaterialsAsync(cancellationToken);
+        return allMaterials.FirstOrDefault(m => string.Equals(m.MaterialId, normalizedId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool HasConfiguredConnectionString()
+    {
+        try
+        {
+            var connStr = _dbContext.Database.GetConnectionString();
+            return !string.IsNullOrWhiteSpace(connStr);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static async Task<IReadOnlyList<Material>> LoadSeededCsvMaterialsAsync(CancellationToken cancellationToken)
@@ -85,4 +136,3 @@ public class MaterialProvider : IMaterialProvider
         return results;
     }
 }
-

@@ -6,7 +6,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EngCalc.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialProduction : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,8 +19,9 @@ namespace EngCalc.Infrastructure.Migrations
                     Specification = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Grade = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     ProductForm = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    MinTensileStrength = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    MinYieldStrength = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    MinTensileStrength = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    MinYieldStrength = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    MaxTemperatureLimit = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Notes = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true)
                 },
                 constraints: table =>
@@ -35,9 +36,9 @@ namespace EngCalc.Infrastructure.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     MaterialId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    Temperature = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    AllowableStress = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
-                    YieldStress = table.Column<decimal>(type: "numeric(18,2)", nullable: true)
+                    Temperature = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AllowableStress = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    YieldStress = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
                 },
                 constraints: table =>
                 {

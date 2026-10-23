@@ -703,7 +703,7 @@ export default function HeadThicknessPage() {
                   {HEAD_THICKNESS_TEXTS.step4.referencePrefix}
                 </span>
                 <Latex
-                  formula={result?.referenceLatex ?? fallbackReferenceLatex}
+                  formula={fallbackReferenceLatex}
                   displayMode={false}
                   className="py-0"
                 />

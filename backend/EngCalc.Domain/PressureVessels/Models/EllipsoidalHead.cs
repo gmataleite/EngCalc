@@ -29,6 +29,9 @@ public class EllipsoidalHead
         if (headHeight.HasValue) 
             Guard.AgainstNegativeOrZero(headHeight, nameof(headHeight));
 
+        if (factorK.HasValue)
+            Guard.AgainstNegativeOrZero(factorK.Value, nameof(factorK));
+
         _designPressure = designPressure;
         _internalDiameter = internalDiameter;
         _allowableStress = allowableStress;
@@ -52,7 +55,14 @@ public class EllipsoidalHead
         double E = _jointEfficiency;
         double K = _factorK;
 
-        double thickness = P * D * K / (2 * S * E - 0.2 * P);
+        double denominator = 2.0 * S * E - 0.2 * P;
+        if (denominator <= 0 || P >= S * E)
+        {
+            throw new InvalidOperationException(
+                "Effective design pressure (P) exceeds the allowable membrane stress limit (S·E) for ellipsoidal heads.");
+        }
+
+        double thickness = P * D * K / denominator;
         
         return Length.FromMillimeters(thickness) + _allowableCorrosion;
     }
@@ -65,4 +75,3 @@ public class EllipsoidalHead
         return (2.0 + Math.Pow(D / (2.0 * H), 2)) / 6;
     }
 }
-

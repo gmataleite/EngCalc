@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useEffect, useRef } from "react"
 import katex from "katex"
 import "katex/dist/katex.min.css"
 import { cn } from "@/lib/utils"
@@ -10,8 +10,12 @@ interface LatexProps {
 }
 
 export function Latex({ formula, displayMode = true, className }: LatexProps) {
-  const html = useMemo(() => {
-    return katex.renderToString(formula, {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    katex.render(formula, containerRef.current, {
       displayMode,
       throwOnError: false,
       strict: false,
@@ -21,8 +25,8 @@ export function Latex({ formula, displayMode = true, className }: LatexProps) {
 
   return (
     <div
+      ref={containerRef}
       className={cn("overflow-x-auto py-1 text-foreground", className)}
-      dangerouslySetInnerHTML={{ __html: html }}
     />
   )
 }

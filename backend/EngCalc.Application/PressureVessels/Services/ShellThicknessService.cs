@@ -41,6 +41,8 @@ public class ShellThicknessService : IShellThicknessService
         ShellThicknessRequestDto request,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         bool isImperial = string.Equals(request.UnitSystem, "imperial", StringComparison.OrdinalIgnoreCase);
         string unitSystem = isImperial ? "imperial" : "metric";
         string lengthUnit = isImperial ? "in" : "mm";
@@ -105,6 +107,11 @@ public class ShellThicknessService : IShellThicknessService
         }
         else
         {
+            if (string.IsNullOrWhiteSpace(request.MaterialId) || request.MaterialId.Length > 50)
+            {
+                throw new ArgumentException("A valid MaterialId is required when manual allowable stress override is not active.", nameof(request.MaterialId));
+            }
+
             var material = await _materialProvider.GetMaterialByIdAsync(request.MaterialId, cancellationToken)
                 ?? throw new KeyNotFoundException($"Material '{request.MaterialId}' was not found in the database.");
 
@@ -215,4 +222,3 @@ public class ShellThicknessService : IShellThicknessService
         };
     }
 }
-
