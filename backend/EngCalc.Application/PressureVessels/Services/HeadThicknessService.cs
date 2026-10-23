@@ -48,13 +48,15 @@ public class HeadThicknessService : IHeadThicknessService
         HeadThicknessRequestDto request,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         bool isImperial = string.Equals(request.UnitSystem, "imperial", StringComparison.OrdinalIgnoreCase);
         string unitSystem = isImperial ? "imperial" : "metric";
         string lengthUnit = isImperial ? "inch" : "mm";
         string pressureUnit = isImperial ? "psi" : "MPa";
         string temperatureUnit = isImperial ? "°F" : "°C";
 
-        string headType = (request.HeadType ?? "ellipsoidal").ToLowerInvariant();
+        string headType = (request.HeadType ?? "ellipsoidal").Trim().ToLowerInvariant();
         if (headType == "conical")
         {
             throw new NotSupportedException("Conical head calculations are planned on the roadmap and not yet available.");
@@ -65,14 +67,24 @@ public class HeadThicknessService : IHeadThicknessService
             throw new NotSupportedException("Calculate Maximum Allowable Working Pressure (P) is planned on the roadmap and not yet available.");
         }
 
-        if (request.InternalPressure is null || request.InternalPressure <= 0)
+        if (request.InternalPressure is null || !double.IsFinite(request.InternalPressure.Value) || request.InternalPressure <= 0 || request.InternalPressure > 100_000)
         {
-            throw new ArgumentOutOfRangeException(nameof(request.InternalPressure), "Internal design pressure must be greater than zero.");
+            throw new ArgumentOutOfRangeException(nameof(request.InternalPressure), "Internal design pressure must be a finite value greater than zero.");
         }
 
-        if (request.CorrosionAllowance < 0)
+        if (!double.IsFinite(request.CorrosionAllowance) || request.CorrosionAllowance < 0 || request.CorrosionAllowance > 10_000)
         {
-            throw new ArgumentOutOfRangeException(nameof(request.CorrosionAllowance), "Corrosion allowance cannot be negative.");
+            throw new ArgumentOutOfRangeException(nameof(request.CorrosionAllowance), "Corrosion allowance must be a finite non-negative value.");
+        }
+
+        if (!double.IsFinite(request.DesignTemperature) || request.DesignTemperature < -460 || request.DesignTemperature > 5_000)
+        {
+            throw new ArgumentOutOfRangeException(nameof(request.DesignTemperature), "Design temperature is outside the valid physical range.");
+        }
+
+        if (request.AllowableStressOverride is not null && (!double.IsFinite(request.AllowableStressOverride.Value) || request.AllowableStressOverride.Value > 1_000_000))
+        {
+            throw new ArgumentOutOfRangeException(nameof(request.AllowableStressOverride), "Allowable stress override must be a finite value within a valid physical range.");
         }
 
         var warnings = new List<string>();
@@ -98,6 +110,11 @@ public class HeadThicknessService : IHeadThicknessService
         }
         else
         {
+            if (string.IsNullOrWhiteSpace(request.MaterialId) || request.MaterialId.Length > 50)
+            {
+                throw new ArgumentException("A valid MaterialId is required when manual allowable stress override is not active.", nameof(request.MaterialId));
+            }
+
             var material = await _materialProvider.GetMaterialByIdAsync(request.MaterialId, cancellationToken)
                 ?? throw new KeyNotFoundException($"Material '{request.MaterialId}' was not found in the database.");
 
@@ -134,9 +151,9 @@ public class HeadThicknessService : IHeadThicknessService
         {
             case "ellipsoidal":
             {
-                if (request.InsideDiameter is null || request.InsideDiameter <= 0)
+                if (request.InsideDiameter is null || !double.IsFinite(request.InsideDiameter.Value) || request.InsideDiameter <= 0 || request.InsideDiameter > 2_000_000)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(request.InsideDiameter), "Inside diameter of head skirt (D) must be greater than zero.");
+                    throw new ArgumentOutOfRangeException(nameof(request.InsideDiameter), "Inside diameter of head skirt (D) must be a finite value greater than zero.");
                 }
 
                 Length insideDiameter = isImperial
@@ -144,8 +161,13 @@ public class HeadThicknessService : IHeadThicknessService
                     : Length.FromMillimeters(request.InsideDiameter.Value);
 
                 Length? headHeight = null;
-                if (request.HeadHeight is > 0)
+                if (request.HeadHeight is not null)
                 {
+                    if (!double.IsFinite(request.HeadHeight.Value) || request.HeadHeight <= 0 || request.HeadHeight > 2_000_000)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(request.HeadHeight), "Head height (h) must be a finite value greater than zero.");
+                    }
+
                     headHeight = isImperial
                         ? Length.FromInches(request.HeadHeight.Value)
                         : Length.FromMillimeters(request.HeadHeight.Value);
@@ -173,14 +195,14 @@ public class HeadThicknessService : IHeadThicknessService
 
             case "torispherical":
             {
-                if (request.CrownRadius is null || request.CrownRadius <= 0)
+                if (request.CrownRadius is null || !double.IsFinite(request.CrownRadius.Value) || request.CrownRadius <= 0 || request.CrownRadius > 2_000_000)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(request.CrownRadius), "Inside crown radius (L) must be greater than zero.");
+                    throw new ArgumentOutOfRangeException(nameof(request.CrownRadius), "Inside crown radius (L) must be a finite value greater than zero.");
                 }
 
-                if (request.KnuckleRadius is null || request.KnuckleRadius <= 0)
+                if (request.KnuckleRadius is null || !double.IsFinite(request.KnuckleRadius.Value) || request.KnuckleRadius <= 0 || request.KnuckleRadius > 2_000_000)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(request.KnuckleRadius), "Inside knuckle radius (r) must be greater than zero.");
+                    throw new ArgumentOutOfRangeException(nameof(request.KnuckleRadius), "Inside knuckle radius (r) must be a finite value greater than zero.");
                 }
 
                 Length crownRadius = isImperial
@@ -219,9 +241,9 @@ public class HeadThicknessService : IHeadThicknessService
 
             case "hemispherical":
             {
-                if (request.InsideRadius is null || request.InsideRadius <= 0)
+                if (request.InsideRadius is null || !double.IsFinite(request.InsideRadius.Value) || request.InsideRadius <= 0 || request.InsideRadius > 1_000_000)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(request.InsideRadius), "Inside spherical radius (L) must be greater than zero.");
+                    throw new ArgumentOutOfRangeException(nameof(request.InsideRadius), "Inside spherical radius (L) must be a finite value greater than zero.");
                 }
 
                 Length insideRadius = isImperial
@@ -303,4 +325,3 @@ public class HeadThicknessService : IHeadThicknessService
         };
     }
 }
-

@@ -18,10 +18,9 @@ public class TemperatureConverterTests
     [InlineData(0.0, 255.37, TemperatureUnits.Fahrenheit, TemperatureUnits.Kelvin)]
     [InlineData(0.0, -459.67, TemperatureUnits.Kelvin, TemperatureUnits.Fahrenheit)]
     [InlineData(0.0, -273.15, TemperatureUnits.Kelvin, TemperatureUnits.Celsius)]
+    [InlineData(25.0, 25.0, TemperatureUnits.Celsius, TemperatureUnits.Celsius)]
     public void Convert_ShouldReturnCorrectValue(double initialTemperature, double expectedTemperature, TemperatureUnits initialUnit, TemperatureUnits targetUnit)
     {
-        // Arrange
-        
         // Act
         var actualTemperature = new TemperatureConverter(initialTemperature, initialUnit, targetUnit).ConvertedValue;
 
@@ -38,7 +37,13 @@ public class TemperatureConverterTests
         var targetUnit = TemperatureUnits.Fahrenheit;
 
         // Act & Assert
-        Assert.Throws<ArgumentException>(() => new TemperatureConverter(initialTemperature, initialUnit, targetUnit));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TemperatureConverter(initialTemperature, initialUnit, targetUnit));
+    }
+
+    [Fact]
+    public void Convert_ShouldThrowArgumentOutOfRangeException_WhenBelowAbsoluteZero()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TemperatureConverter(-300.0, TemperatureUnits.Celsius, TemperatureUnits.Kelvin));
     }
 
     [Fact]

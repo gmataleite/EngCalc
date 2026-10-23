@@ -83,7 +83,14 @@ public class TorisphericalHead
         double E = _jointEfficiency;
         double M = _factorM;
 
-        double thickness = P * L * M / (2 * S * E - 0.2 * P);
+        double denominator = 2.0 * S * E - 0.2 * P;
+        if (denominator <= 0 || P >= S * E)
+        {
+            throw new InvalidOperationException(
+                "Effective design pressure (P) exceeds the allowable membrane stress limit (S·E) for torispherical heads.");
+        }
+
+        double thickness = P * L * M / denominator;
         
         return Length.FromMillimeters(thickness) + _allowableCorrosion;
     }
@@ -91,4 +98,3 @@ public class TorisphericalHead
     private double CalculateFactorM(Length crownRadius, Length knuckleRadius) =>
         (3.0 + Math.Sqrt(crownRadius / knuckleRadius)) / 4;
 }
-

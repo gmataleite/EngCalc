@@ -1,5 +1,6 @@
 namespace EngCalc.Domain.PressureVessels;
 
+using System;
 using UnitsNet;
 using UnitsNet.Units;
 
@@ -9,9 +10,15 @@ internal class CircumferentialThinShellCalculator : ShellCalculatorBase // ASME 
     {
         var (P, R, S, E) = GetConstants(effectivePressure, internalRadius, allowableStress, jointEfficiency);
 
-        double thickness = P * R / ((S * E) - (0.6 * P));
+        double denominator = (S * E) - (0.6 * P);
+        if (denominator <= 0)
+        {
+            throw new InvalidOperationException(
+                "Effective design pressure (P) exceeds the allowable stress limit for thin-wall cylindrical shells (UG-27).");
+        }
+
+        double thickness = P * R / denominator;
         
         return Length.FromMillimeters(thickness);
     }
 }
-

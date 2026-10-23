@@ -11,8 +11,8 @@ using EngCalc.Infrastructure.Data;
 namespace EngCalc.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20261020181226_AddMaxTemperatureColumn")]
-    partial class AddMaxTemperatureColumn
+    [Migration("20261023165000_InitialProduction")]
+    partial class InitialProduction
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
