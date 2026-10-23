@@ -209,8 +209,16 @@ static string? ResolveConnectionString(IConfiguration configuration)
             Database = database,
             Username = username,
             Password = password,
-            SslMode = SslMode.Require
+            SslMode = SslMode.Require,
+            TrustServerCertificate = true
         };
+
+        // Compatibilidade com Supavisor (Supabase Transaction Pooler na porta 6543)
+        if (builder.Port == 6543)
+        {
+            builder.NoResetOnClose = true;
+            builder.MaxAutoPrepare = 0;
+        }
 
         return builder.ConnectionString;
     }
