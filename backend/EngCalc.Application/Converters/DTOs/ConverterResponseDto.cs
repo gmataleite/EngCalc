@@ -1,6 +1,6 @@
 namespace EngCalc.Application.Converters.DTOs;
 
-public record TemperatureConverterResponseDto(
+public record ConverterResponseDto(
     double ConvertedValue,
     string ConvertedUnit
 );

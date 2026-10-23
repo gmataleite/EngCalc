@@ -4,13 +4,13 @@ using Xunit;
 
 namespace EngCalc.UnitTests.Application;
 
-public class TemperatureConverterServiceTests
+public class ConverterServiceTests
 {
     [Fact]
     public async Task ConvertAsync_ShouldReturnTemperatureConverterResponseDto_WhenSuccessful()
     {
         // Arrange
-        var dto = new TemperatureConverterRequestDto(25.0, "Celsius", "Fahrenheit");
+        var dto = new ConverterRequestDto("temperature", 25.0, "Celsius", "Fahrenheit");
 
         // Act
         var result = await new ConverterService().ConvertAsync(dto);
@@ -25,7 +25,7 @@ public class TemperatureConverterServiceTests
     public async Task ConvertAsync_ShouldThrowArgumentOutOfRangeException_WhenInitialValueIsNotFinite()
     {
         // Arrange
-        var dto = new TemperatureConverterRequestDto(double.NaN, "Celsius", "Fahrenheit");
+        var dto = new ConverterRequestDto("temperature", double.NaN, "Celsius", "Fahrenheit");
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await new ConverterService().ConvertAsync(dto));
@@ -35,7 +35,7 @@ public class TemperatureConverterServiceTests
     public async Task ConvertAsync_ShouldThrowArgumentException_WhenInitialUnitIsInvalid()
     {
         // Arrange
-        var dto = new TemperatureConverterRequestDto(25.0, "InvalidUnit", "Fahrenheit");
+        var dto = new ConverterRequestDto("temperature", 25.0, "InvalidUnit", "Fahrenheit");
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(async () => await new ConverterService().ConvertAsync(dto));
@@ -45,7 +45,7 @@ public class TemperatureConverterServiceTests
     public async Task ConvertAsync_ShouldThrowArgumentException_WhenTargetUnitIsInvalid()
     {
         // Arrange
-        var dto = new TemperatureConverterRequestDto(25.0, "Celsius", "InvalidUnit");
+        var dto = new ConverterRequestDto("temperature", 25.0, "Celsius", "InvalidUnit");
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(async () => await new ConverterService().ConvertAsync(dto));
