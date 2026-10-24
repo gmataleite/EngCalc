@@ -84,6 +84,36 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Unit Converter module */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold tracking-tight">Unit Converter</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ArrowLeftRight className="size-4 text-primary" />
+                <CardTitle>General Unit Converter</CardTitle>
+              </div>
+              <CardDescription>
+                Dimensional conversion utilities across Metric (SI) and Imperial
+                engineering units (pressure, stress, torque, length, thermal).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                nativeButton={false}
+                render={<Link to="/converters" />}
+                variant="default"
+                className="w-full justify-between"
+              >
+                <span>Open Calculator</span>
+                <ArrowRight className="size-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
       {/* Planned Engineering Modules */}
       <section className="space-y-3">
         <h2 className="text-lg font-semibold tracking-tight">
@@ -121,28 +151,6 @@ export default function HomePage() {
               <CardDescription>
                 Beam deflection, section properties, column buckling, and bolted
                 / welded connection checks.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                variant="outline"
-                disabled
-                className="w-full justify-between"
-              >
-                <span>Planned Module</span>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="opacity-75">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <ArrowLeftRight className="size-4 text-muted-foreground" />
-                <CardTitle>Unit Conversions</CardTitle>
-              </div>
-              <CardDescription>
-                Dimensional conversion utilities across Metric (SI) and Imperial
-                engineering units (pressure, stress, torque, length, thermal).
               </CardDescription>
             </CardHeader>
             <CardContent>

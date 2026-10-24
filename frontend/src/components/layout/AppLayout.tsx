@@ -50,6 +50,19 @@ export default function AppLayout() {
             >
               Formed Heads (UG-32)
             </NavLink>
+            <NavLink
+              to="/converters"
+              className={({ isActive }) =>
+                cn(
+                  "transition-colors hover:text-foreground",
+                  isActive
+                    ? "font-medium text-foreground"
+                    : "text-muted-foreground"
+                )
+              }
+            >
+              Unit Converter
+            </NavLink>
           </nav>
         </div>
       </header>
