@@ -116,6 +116,10 @@ async Task ConfigurePipelineAsync(WebApplication app)
     if (app.Environment.IsDevelopment())
     {
         app.MapOpenApi();
+        app.UseSwaggerUI(options =>
+        {
+            options.SwaggerEndpoint("/openapi/v1.json", "EngCalc API v1");
+        });
     }
     else
     {

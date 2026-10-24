@@ -15,6 +15,12 @@ public class ConverterController : ControllerBase
         _converterService = converterService;
     }
 
+    [HttpGet("options")]
+    public ActionResult<ConverterOptionsDto> GetOptions()
+    {
+        return Ok(_converterService.GetOptions());
+    }
+
     [HttpPost]
     public async Task<ActionResult<ConverterResponseDto>> Calculate(
         [FromBody] ConverterRequestDto request)

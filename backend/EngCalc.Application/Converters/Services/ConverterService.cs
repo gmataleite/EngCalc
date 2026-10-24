@@ -15,6 +15,27 @@ public class ConverterService : IConverterService
         new("volume", "Volume")
     ];
 
+    private static readonly IReadOnlyList<SelectOptionDto> TemperatureUnitsOptions =
+    [
+        new("celsius", "Celsius"),
+        new("fahrenheit", "Fahrenheit"),
+        new("kelvin", "Kelvin")
+    ];
+
+    private static readonly IReadOnlyList<SelectOptionDto> PressureUnitsOptions =
+    [
+        new("pascal", "Pascal"),
+        new("bar", "Bar"),
+        new("psi", "Pounds per square inch")
+    ];
+
+    private static readonly IReadOnlyList<SelectOptionDto> VolumeUnitsOptions =
+    [
+        new("cubic_meters", "Cubic Meters"),
+        new("liters", "Liters"),
+        new("gallons", "Gallons")
+    ];
+
     public ConverterOptionsDto GetOptions()
     {
         return new ConverterOptionsDto(PhysicalPropertiesOptions);
