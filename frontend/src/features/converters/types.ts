@@ -4,7 +4,7 @@ export type PhysicalPropertyType = "temperature" | "pressure" | "volume"
 
 export type TemperatureUnit = "°C" | "°F" | "K"
 
-export type PressureUnit = "Pa" | "bar" | "psi" | "N/m²" 
+export type PressureUnit = "Pa" | "bar" | "psi" | "N/m²"
 
 export type VolumeUnit = "m3" | "L" | "gal"
 
