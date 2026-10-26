@@ -22,7 +22,7 @@ public class ConverterService : IConverterService
                 TemperatureUnits.Celsius => "Celsius (°C)",
                 TemperatureUnits.Fahrenheit => "Fahrenheit (°F)",
                 TemperatureUnits.Kelvin => "Kelvin (K)",
-                _ => throw new ArgumentOutOfRangeException(nameof(unit), $"Unsupported temperature unit: {unit}")
+                _ => unit.ToString()
             }))
             .ToList();
 
@@ -32,23 +32,27 @@ public class ConverterService : IConverterService
             {
                 PressureUnits.Pascal => "Pascal (Pa)",
                 PressureUnits.Bar => "Bar (bar)",
+                PressureUnits.NewtonPerSquareMeter => "Newton per square meter (N/m²)",
                 PressureUnits.PoundsPerSquareInch => "Pounds per square inch (psi)",
-                _ => throw new ArgumentOutOfRangeException(nameof(unit), $"Unsupported pressure unit: {unit}")
+                _ => unit.ToString()
             }))
             .ToList();
 
-    // private static readonly IReadOnlyList<SelectOptionDto> VolumeUnitsOptions =
-    // [
-    //     new("cubic_meters", "Cubic Meters"),
-    //     new("liters", "Liters"),
-    //     new("gallons", "Gallons")
-    // ];
+    private static readonly IReadOnlyList<SelectOptionDto> VolumeUnitsOptions =
+    Enum.GetValues<VolumeUnits>()
+            .Select(unit => new SelectOptionDto(unit.ToString(), unit switch
+            {
+                VolumeUnits.CubicMeters => "Cubic Meters (m³)",
+                VolumeUnits.Liters => "Liters (L)",
+                VolumeUnits.Gallons => "Gallons (gal)",
+                _ => unit.ToString()
+            }))
+            .ToList();
 
     public ConverterOptionsDto GetOptions()
     {
-        return new ConverterOptionsDto(PhysicalPropertiesOptions, TemperatureUnitsOptions, PressureUnitsOptions);
+        return new ConverterOptionsDto(PhysicalPropertiesOptions, TemperatureUnitsOptions, PressureUnitsOptions, VolumeUnitsOptions);
     }
-
     public Task<ConverterResponseDto> ConvertAsync(ConverterRequestDto request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -69,8 +73,8 @@ public class ConverterService : IConverterService
                 return Task.FromResult(ConvertTemperature(request));
             case "pressure":
                 return Task.FromResult(ConvertPressure(request));
-            // case "volume":
-            //     return Task.FromResult(ConvertVolume(request));
+                    case "volume":
+                        return Task.FromResult(ConvertVolume(request));
             default:
                 throw new NotSupportedException($"Physical property type '{request.PhysicalPropertyType}' is not supported.");
         }
@@ -117,6 +121,30 @@ public class ConverterService : IConverterService
         }
 
         double convertedValue = new PressureConverter(
+            request.InitialValue, initialUnit, targetUnit).ConvertedValue;
+
+        return new ConverterResponseDto(
+            ConvertedValue: convertedValue,
+            ConvertedUnit: request.TargetUnit);
+    }
+
+    public ConverterResponseDto ConvertVolume(ConverterRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.InitialUnit) ||
+            !Enum.TryParse<VolumeUnits>(request.InitialUnit, true, out var initialUnit) ||
+            !Enum.IsDefined(typeof(VolumeUnits), initialUnit))
+        {
+            throw new ArgumentException($"Invalid initial unit: {request.InitialUnit}", nameof(request.InitialUnit));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.TargetUnit) ||
+            !Enum.TryParse<VolumeUnits>(request.TargetUnit, true, out var targetUnit) ||
+            !Enum.IsDefined(typeof(VolumeUnits), targetUnit))
+        {
+            throw new ArgumentException($"Invalid target unit: {request.TargetUnit}", nameof(request.TargetUnit));
+        }
+
+        double convertedValue = new VolumeConverter(
             request.InitialValue, initialUnit, targetUnit).ConvertedValue;
 
         return new ConverterResponseDto(
