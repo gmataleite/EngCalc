@@ -4,8 +4,8 @@ export const ConverterFormSchema = z
   .object({
     physicalPropertyType: z.enum([
       "temperature",
-      // "pressure",
-      // "volume",
+      "pressure",
+      "volume",
     ]),
     initialValue: z.number().finite("Initial value must be a valid number."),
     initialUnit: z.string().min(1, "Initial unit is required."),

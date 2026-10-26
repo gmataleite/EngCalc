@@ -39,6 +39,7 @@ export const CONVERTER_TEXTS = {
       pascal: "Pascal (Pa)",
       bar: "Bar (bar)",
       psi: "Pounds per square inch (psi)",
+      newtonPerSquareMeter: "Newton per square meter (N/m²)",
     },
     volume: {
       cubicMeters: "Cubic Meters (m³)",
