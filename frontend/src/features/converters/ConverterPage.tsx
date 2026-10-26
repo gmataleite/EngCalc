@@ -40,14 +40,20 @@ import {
 import type {
   PhysicalPropertyType,
   TemperatureUnit,
+  PressureUnit,
+  VolumeUnit,
   ConverterRequest,
 } from "./types"
 
-const TEMPERATURE_UNITS: {
-  id: TemperatureUnit
+type ConverterUnit = TemperatureUnit | PressureUnit | VolumeUnit
+
+interface UnitOption {
+  id: ConverterUnit
   label: string
   backendValue: string
-}[] = [
+}
+
+const TEMPERATURE_UNITS: UnitOption[] = [
   {
     id: "°C",
     label: CONVERTER_TEXTS.units.temperature.celsius,
@@ -65,6 +71,62 @@ const TEMPERATURE_UNITS: {
   },
 ]
 
+const PRESSURE_UNITS: UnitOption[] = [
+  {
+    id: "Pa",
+    label: CONVERTER_TEXTS.units.pressure.pascal,
+    backendValue: "Pascal",
+  },
+  {
+    id: "bar",
+    label: CONVERTER_TEXTS.units.pressure.bar,
+    backendValue: "Bar",
+  },
+  {
+    id: "psi",
+    label: CONVERTER_TEXTS.units.pressure.psi,
+    backendValue: "PoundsPerSquareInch",
+  },
+  {
+    id: "N/m²",
+    label: CONVERTER_TEXTS.units.pressure.newtonPerSquareMeter,
+    backendValue: "NewtonPerSquareMeter",
+  },
+]
+
+const VOLUME_UNITS: UnitOption[] = [
+  {
+    id: "m3",
+    label: CONVERTER_TEXTS.units.volume.cubicMeters,
+    backendValue: "CubicMeters",
+  },
+  {
+    id: "L",
+    label: CONVERTER_TEXTS.units.volume.liters,
+    backendValue: "Liters",
+  },
+  {
+    id: "gal",
+    label: CONVERTER_TEXTS.units.volume.gallons,
+    backendValue: "Gallons",
+  },
+]
+
+const UNITS_BY_PROPERTY: Record<PhysicalPropertyType, UnitOption[]> = {
+  temperature: TEMPERATURE_UNITS,
+  pressure: PRESSURE_UNITS,
+  volume: VOLUME_UNITS,
+}
+
+const DEFAULT_UNITS_BY_PROPERTY: Record<
+  PhysicalPropertyType,
+  { initialUnit: ConverterUnit; targetUnit: ConverterUnit }
+> = {
+  temperature: { initialUnit: "°C", targetUnit: "°F" },
+  pressure: { initialUnit: "Pa", targetUnit: "bar" },
+  volume: { initialUnit: "m3", targetUnit: "L" },
+}
+
 const UNIT_TO_BACKEND: Record<string, string> = {
   "°C": "Celsius",
   "°F": "Fahrenheit",
@@ -72,6 +134,19 @@ const UNIT_TO_BACKEND: Record<string, string> = {
   celsius: "Celsius",
   fahrenheit: "Fahrenheit",
   kelvin: "Kelvin",
+  Pa: "Pascal",
+  bar: "Bar",
+  psi: "PoundsPerSquareInch",
+  "N/m²": "NewtonPerSquareMeter",
+  pascal: "Pascal",
+  poundsPerSquareInch: "PoundsPerSquareInch",
+  newtonPerSquareMeter: "NewtonPerSquareMeter",
+  m3: "CubicMeters",
+  L: "Liters",
+  gal: "Gallons",
+  cubicMeters: "CubicMeters",
+  liters: "Liters",
+  gallons: "Gallons",
 }
 
 export default function ConverterPage() {
@@ -124,10 +199,18 @@ export default function ConverterPage() {
     if (!parsed.success) return
 
     const v = parsed.data
+    const validUnits = UNITS_BY_PROPERTY[v.physicalPropertyType]
+    if (
+      !validUnits?.some((u) => u.id === v.initialUnit) ||
+      !validUnits?.some((u) => u.id === v.targetUnit)
+    ) {
+      return
+    }
+
     const backendInitial = (UNIT_TO_BACKEND[v.initialUnit] ??
-      v.initialUnit) as TemperatureUnit
+      v.initialUnit) as ConverterUnit
     const backendTarget = (UNIT_TO_BACKEND[v.targetUnit] ??
-      v.targetUnit) as TemperatureUnit
+      v.targetUnit) as ConverterUnit
 
     const payload: ConverterRequest = {
       physicalPropertyType: v.physicalPropertyType,
@@ -156,6 +239,12 @@ export default function ConverterPage() {
       ? calculationMutation.error.message
       : "Unable to calculate conversion."
   }, [calculationMutation.error])
+
+  const physicalPropertyType =
+    watchedValues.physicalPropertyType ??
+    DEFAULT_CONVERTER_VALUES.physicalPropertyType
+  const availableUnits =
+    UNITS_BY_PROPERTY[physicalPropertyType] ?? TEMPERATURE_UNITS
 
   const initialUnit = watchedValues.initialUnit
   const targetUnit = watchedValues.targetUnit
@@ -189,20 +278,9 @@ export default function ConverterPage() {
     return undefined
   }, [result, initialValue, initialUnit, targetUnit, hasSameUnits])
 
-  // Identify active formula according to current unit pair
-  const activeFormulaTitle = useMemo(() => {
-    if (initialUnit === "°C" && targetUnit === "°F")
-      return "Celsius to Fahrenheit"
-    if (initialUnit === "°F" && targetUnit === "°C")
-      return "Fahrenheit to Celsius"
-    if (initialUnit === "°C" && targetUnit === "K") return "Celsius to Kelvin"
-    if (initialUnit === "K" && targetUnit === "°C") return "Kelvin to Celsius"
-    if (initialUnit === "°F" && targetUnit === "K")
-      return "Fahrenheit to Kelvin"
-    if (initialUnit === "K" && targetUnit === "°F")
-      return "Kelvin to Fahrenheit"
-    return null
-  }, [initialUnit, targetUnit])
+  const currentFormulaReference =
+    CONVERTER_TEXTS.formulaReference[physicalPropertyType] ??
+    CONVERTER_TEXTS.formulaReference.temperature
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-12">
@@ -224,20 +302,27 @@ export default function ConverterPage() {
           <RadioGroup
             value={watchedValues.physicalPropertyType}
             onValueChange={(val) => {
-              if (val === "temperature") {
-                form.setValue(
-                  "physicalPropertyType",
-                  val as PhysicalPropertyType,
-                  {
-                    shouldValidate: true,
-                  }
-                )
+              const nextProperty = val as PhysicalPropertyType
+              if (nextProperty in UNITS_BY_PROPERTY) {
+                const defaultUnits = DEFAULT_UNITS_BY_PROPERTY[nextProperty]
+                form.setValue("physicalPropertyType", nextProperty, {
+                  shouldValidate: true,
+                })
+                form.setValue("initialUnit", defaultUnits.initialUnit, {
+                  shouldValidate: true,
+                })
+                form.setValue("targetUnit", defaultUnits.targetUnit, {
+                  shouldValidate: true,
+                })
               }
             }}
             className="flex flex-wrap items-center gap-4 pt-1"
           >
             {propertyOptions.map((opt) => {
-              const isSupported = opt.id === "temperature"
+              const isSupported =
+                opt.id === "temperature" ||
+                opt.id === "pressure" ||
+                opt.id === "volume"
               return (
                 <label
                   key={opt.id}
@@ -299,7 +384,7 @@ export default function ConverterPage() {
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {TEMPERATURE_UNITS.map((u) => (
+                    {availableUnits.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.label}
                       </SelectItem>
@@ -359,7 +444,7 @@ export default function ConverterPage() {
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {TEMPERATURE_UNITS.map((u) => (
+                    {availableUnits.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.label}
                       </SelectItem>
@@ -409,12 +494,12 @@ export default function ConverterPage() {
       {/* Formula Reference */}
       <section className="space-y-4">
         <h3 className="text-base font-semibold text-foreground">
-          {CONVERTER_TEXTS.formulaReference.title}
+          {currentFormulaReference.title}
         </h3>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {CONVERTER_TEXTS.formulaReference.items.map((item) => {
-            const isActive = item.title === activeFormulaTitle
+          {currentFormulaReference.items.map((item) => {
+            const isActive = item.from === initialUnit && item.to === targetUnit
             return (
               <div
                 key={item.title}

@@ -1,7 +1,7 @@
 using EngCalc.Domain.Converters.Models;
 using EngCalc.Domain.Converters.Enums;
 
-namespace EngCalc.Tests.Converters.TemperatureConverters;
+namespace EngCalc.Tests.Converters;
 
 public class TemperatureConverterTests
 {
@@ -19,7 +19,13 @@ public class TemperatureConverterTests
     [InlineData(0.0, -459.67, TemperatureUnits.Kelvin, TemperatureUnits.Fahrenheit)]
     [InlineData(0.0, -273.15, TemperatureUnits.Kelvin, TemperatureUnits.Celsius)]
     [InlineData(25.0, 25.0, TemperatureUnits.Celsius, TemperatureUnits.Celsius)]
-    public void Convert_ShouldReturnCorrectValue(double initialTemperature, double expectedTemperature, TemperatureUnits initialUnit, TemperatureUnits targetUnit)
+    [InlineData(77.0, 77.0, TemperatureUnits.Fahrenheit, TemperatureUnits.Fahrenheit)]
+    [InlineData(300.0, 300.0, TemperatureUnits.Kelvin, TemperatureUnits.Kelvin)]
+    public void Convert_ShouldReturnCorrectValue(
+        double initialTemperature,
+        double expectedTemperature,
+        TemperatureUnits initialUnit,
+        TemperatureUnits targetUnit)
     {
         // Act
         var actualTemperature = new TemperatureConverter(initialTemperature, initialUnit, targetUnit).ConvertedValue;
@@ -28,11 +34,13 @@ public class TemperatureConverterTests
         Assert.Equal(expectedTemperature, actualTemperature);
     }
 
-    [Fact]
-    public void Convert_ShouldThrowArgumentOutOfRangeException_WhenInitialValueIsNotFinite()
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void Convert_ShouldThrowArgumentOutOfRangeException_WhenInitialValueIsNotFinite(double initialTemperature)
     {
         // Arrange
-        var initialTemperature = double.NaN;
         var initialUnit = TemperatureUnits.Celsius;
         var targetUnit = TemperatureUnits.Fahrenheit;
 
@@ -40,33 +48,47 @@ public class TemperatureConverterTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new TemperatureConverter(initialTemperature, initialUnit, targetUnit));
     }
 
-    [Fact]
-    public void Convert_ShouldThrowArgumentOutOfRangeException_WhenBelowAbsoluteZero()
+    [Theory]
+    [InlineData(-273.16, TemperatureUnits.Celsius, TemperatureUnits.Kelvin)]
+    [InlineData(-300.0, TemperatureUnits.Celsius, TemperatureUnits.Fahrenheit)]
+    [InlineData(-459.68, TemperatureUnits.Fahrenheit, TemperatureUnits.Celsius)]
+    [InlineData(-500.0, TemperatureUnits.Fahrenheit, TemperatureUnits.Kelvin)]
+    [InlineData(-0.01, TemperatureUnits.Kelvin, TemperatureUnits.Celsius)]
+    [InlineData(-10.0, TemperatureUnits.Kelvin, TemperatureUnits.Fahrenheit)]
+    public void Convert_ShouldThrowArgumentOutOfRangeException_WhenBelowAbsoluteZero(
+        double initialTemperature,
+        TemperatureUnits initialUnit,
+        TemperatureUnits targetUnit)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new TemperatureConverter(-300.0, TemperatureUnits.Celsius, TemperatureUnits.Kelvin));
+        // Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TemperatureConverter(initialTemperature, initialUnit, targetUnit));
     }
 
-    [Fact]
-    public void Convert_ShouldThrowArgumentException_WhenInitialUnitIsInvalid()
+    [Theory]
+    [InlineData((TemperatureUnits)999, TemperatureUnits.Fahrenheit)]
+    [InlineData((TemperatureUnits)(-1), TemperatureUnits.Celsius)]
+    [InlineData(TemperatureUnits.Celsius, (TemperatureUnits)999)]
+    [InlineData(TemperatureUnits.Kelvin, (TemperatureUnits)(-1))]
+    public void Convert_ShouldThrowArgumentException_WhenUnitIsInvalid(
+        TemperatureUnits initialUnit,
+        TemperatureUnits targetUnit)
     {
         // Arrange
         var initialTemperature = 25.0;
-        var initialUnit = (TemperatureUnits)999; // Invalid value
-        var targetUnit = TemperatureUnits.Fahrenheit;
 
         // Act & Assert
         Assert.Throws<ArgumentException>(() => new TemperatureConverter(initialTemperature, initialUnit, targetUnit));
     }
 
-    [Fact]
-    public void Convert_ShouldThrowArgumentException_WhenTargetUnitIsInvalid()
+    [Theory]
+    [InlineData(PressureUnits.Pascal, TemperatureUnits.Celsius)]
+    [InlineData(TemperatureUnits.Celsius, PressureUnits.Pascal)]
+    public void ConvertValue_ShouldThrowArgumentException_WhenEnumTypesAreInvalid(Enum initialUnit, Enum targetUnit)
     {
         // Arrange
-        var initialTemperature = 25.0;
-        var initialUnit = TemperatureUnits.Celsius;
-        var targetUnit = (TemperatureUnits)999; // Invalid value
+        var converter = new TemperatureConverter(25.0, TemperatureUnits.Celsius, TemperatureUnits.Fahrenheit);
 
         // Act & Assert
-        Assert.Throws<ArgumentException>(() => new TemperatureConverter(initialTemperature, initialUnit, targetUnit));
+        Assert.Throws<ArgumentException>(() => converter.ConvertValue(25.0, initialUnit, targetUnit));
     }
 }

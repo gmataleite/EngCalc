@@ -2,11 +2,7 @@ import { z } from "zod"
 
 export const ConverterFormSchema = z
   .object({
-    physicalPropertyType: z.enum([
-      "temperature",
-      // "pressure",
-      // "volume",
-    ]),
+    physicalPropertyType: z.enum(["temperature", "pressure", "volume"]),
     initialValue: z.number().finite("Initial value must be a valid number."),
     initialUnit: z.string().min(1, "Initial unit is required."),
     targetUnit: z.string().min(1, "Target unit is required."),
