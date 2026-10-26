@@ -1,7 +1,7 @@
 using EngCalc.Domain.Converters.Models;
 using EngCalc.Domain.Converters.Enums;
 
-namespace EngCalc.Tests.Converters.TemperatureConverters;
+namespace EngCalc.Tests.Converters;
 
 public class TemperatureConverterTests
 {
