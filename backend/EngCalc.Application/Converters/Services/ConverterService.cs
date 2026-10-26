@@ -15,30 +15,38 @@ public class ConverterService : IConverterService
         new("volume", "Volume")
     ];
 
-    private static readonly IReadOnlyList<SelectOptionDto> TemperatureUnitsOptions =
-    [
-        new("celsius", "Celsius"),
-        new("fahrenheit", "Fahrenheit"),
-        new("kelvin", "Kelvin")
-    ];
+    private static readonly IReadOnlyList<SelectOptionDto> TemperatureUnitsOptions = 
+        Enum.GetValues<TemperatureUnits>()
+            .Select(unit => new SelectOptionDto(unit.ToString(), unit switch
+            {
+                TemperatureUnits.Celsius => "Celsius (°C)",
+                TemperatureUnits.Fahrenheit => "Fahrenheit (°F)",
+                TemperatureUnits.Kelvin => "Kelvin (K)",
+                _ => throw new ArgumentOutOfRangeException(nameof(unit), $"Unsupported temperature unit: {unit}")
+            }))
+            .ToList();
 
     private static readonly IReadOnlyList<SelectOptionDto> PressureUnitsOptions =
-    [
-        new("pascal", "Pascal"),
-        new("bar", "Bar"),
-        new("psi", "Pounds per square inch")
-    ];
+        Enum.GetValues<PressureUnits>()
+            .Select(unit => new SelectOptionDto(unit.ToString(), unit switch
+            {
+                PressureUnits.Pascal => "Pascal (Pa)",
+                PressureUnits.Bar => "Bar (bar)",
+                PressureUnits.PoundsPerSquareInch => "Pounds per square inch (psi)",
+                _ => throw new ArgumentOutOfRangeException(nameof(unit), $"Unsupported pressure unit: {unit}")
+            }))
+            .ToList();
 
-    private static readonly IReadOnlyList<SelectOptionDto> VolumeUnitsOptions =
-    [
-        new("cubic_meters", "Cubic Meters"),
-        new("liters", "Liters"),
-        new("gallons", "Gallons")
-    ];
+    // private static readonly IReadOnlyList<SelectOptionDto> VolumeUnitsOptions =
+    // [
+    //     new("cubic_meters", "Cubic Meters"),
+    //     new("liters", "Liters"),
+    //     new("gallons", "Gallons")
+    // ];
 
     public ConverterOptionsDto GetOptions()
     {
-        return new ConverterOptionsDto(PhysicalPropertiesOptions);
+        return new ConverterOptionsDto(PhysicalPropertiesOptions, TemperatureUnitsOptions, PressureUnitsOptions);
     }
 
     public Task<ConverterResponseDto> ConvertAsync(ConverterRequestDto request)
@@ -55,11 +63,17 @@ public class ConverterService : IConverterService
             throw new ArgumentException("Physical property type is required.", nameof(request.PhysicalPropertyType));
         }
 
-        return request.PhysicalPropertyType.Trim().ToLowerInvariant() switch
+        switch (request.PhysicalPropertyType.Trim().ToLowerInvariant())
         {
-            "temperature" => Task.FromResult(ConvertTemperature(request)),
-            _ => throw new NotSupportedException($"Physical property type '{request.PhysicalPropertyType}' is not supported.")
-        };
+            case "temperature":
+                return Task.FromResult(ConvertTemperature(request));
+            case "pressure":
+                return Task.FromResult(ConvertPressure(request));
+            // case "volume":
+            //     return Task.FromResult(ConvertVolume(request));
+            default:
+                throw new NotSupportedException($"Physical property type '{request.PhysicalPropertyType}' is not supported.");
+        }
     }
 
     public ConverterResponseDto ConvertTemperature(ConverterRequestDto request)
@@ -79,6 +93,30 @@ public class ConverterService : IConverterService
         }
 
         double convertedValue = new TemperatureConverter(
+            request.InitialValue, initialUnit, targetUnit).ConvertedValue;
+
+        return new ConverterResponseDto(
+            ConvertedValue: convertedValue,
+            ConvertedUnit: request.TargetUnit);
+    }
+
+    public ConverterResponseDto ConvertPressure(ConverterRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.InitialUnit) ||
+            !Enum.TryParse<PressureUnits>(request.InitialUnit, true, out var initialUnit) ||
+            !Enum.IsDefined(typeof(PressureUnits), initialUnit))
+        {
+            throw new ArgumentException($"Invalid initial unit: {request.InitialUnit}", nameof(request.InitialUnit));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.TargetUnit) ||
+            !Enum.TryParse<PressureUnits>(request.TargetUnit, true, out var targetUnit) ||
+            !Enum.IsDefined(typeof(PressureUnits), targetUnit))
+        {
+            throw new ArgumentException($"Invalid target unit: {request.TargetUnit}", nameof(request.TargetUnit));
+        }
+
+        double convertedValue = new PressureConverter(
             request.InitialValue, initialUnit, targetUnit).ConvertedValue;
 
         return new ConverterResponseDto(
