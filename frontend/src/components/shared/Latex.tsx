@@ -27,7 +27,7 @@ export function Latex({ formula, displayMode = true, className }: LatexProps) {
     <div
       ref={containerRef}
       className={cn(
-        "overflow-x-auto py-1 text-xs text-foreground [&_.katex-display]:my-0.5 [&_.katex]:text-[0.9em] sm:[&_.katex]:text-[0.95em]",
+        "overflow-x-auto py-1 text-xs text-foreground [&_.katex]:text-[0.9em] sm:[&_.katex]:text-[0.95em] [&_.katex-display]:my-0.5",
         className
       )}
     />

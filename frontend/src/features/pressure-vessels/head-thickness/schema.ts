@@ -52,7 +52,10 @@ export const headThicknessFormSchema = z
       })
     }
 
-    if (values.mode === "mawp" && values.thickness <= values.corrosionAllowance) {
+    if (
+      values.mode === "mawp" &&
+      values.thickness <= values.corrosionAllowance
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["thickness"],

@@ -157,8 +157,7 @@ export default function HeadThicknessPage() {
     if (!calculationMutation.error) return null
     if (calculationMutation.error instanceof AxiosError) {
       const responseData = calculationMutation.error.response?.data as
-        | { message?: string }
-        | undefined
+        { message?: string } | undefined
       return (
         responseData?.message ??
         calculationMutation.error.message ??
