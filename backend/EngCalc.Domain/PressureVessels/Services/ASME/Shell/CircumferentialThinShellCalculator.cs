@@ -21,4 +21,20 @@ internal class CircumferentialThinShellCalculator : ShellCalculatorBase // ASME 
         
         return Length.FromMillimeters(thickness);
     }
+
+    public override Pressure CalculateMAWP(Length corrodedThickness, Length internalRadius, Pressure allowableStress, double jointEfficiency)
+    {
+        var (t, R, S, E) = GetMawpConstants(corrodedThickness, internalRadius, allowableStress, jointEfficiency);
+
+        double denominator = R + (0.6 * t);
+        if (denominator <= 0)
+        {
+            throw new InvalidOperationException(
+                "Invalid geometry for thin-wall circumferential MAWP calculation (UG-27(c)(1)).");
+        }
+
+        double pressure = (S * E * t) / denominator;
+
+        return Pressure.FromMegapascals(pressure);
+    }
 }

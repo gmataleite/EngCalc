@@ -14,6 +14,17 @@ public abstract class ShellCalculatorBase : IShellThicknessCalculator
             jointEfficiency
         );
     }
-    public abstract Length CalculateThickness(Pressure effectivePressure, Length internalRadius, Pressure allowableStress, double jointEfficiency);
-}
 
+    protected (double t, double R, double S, double E) GetMawpConstants(Length corrodedThickness, Length internalRadius, Pressure allowableStress, double jointEfficiency)
+    {
+        return (
+            corrodedThickness.Millimeters,
+            internalRadius.Millimeters,
+            allowableStress.Megapascals,
+            jointEfficiency
+        );
+    }
+
+    public abstract Length CalculateThickness(Pressure effectivePressure, Length internalRadius, Pressure allowableStress, double jointEfficiency);
+    public abstract Pressure CalculateMAWP(Length corrodedThickness, Length internalRadius, Pressure allowableStress, double jointEfficiency);
+}

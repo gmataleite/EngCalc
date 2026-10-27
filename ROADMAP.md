@@ -4,13 +4,13 @@ This document tracks the planned epics and milestones for the **EngCalc** calcul
 
 ## Module 1: Pressure Vessels — ASME VIII Div. 1 (`PressureVessels`)
 - [x] Cylindrical Shells — Minimum Required Thickness (UG-27 / Mandatory Appendix 1-2)
-- [ ] **To-Do:** Cylindrical Shells — Solve for Maximum Allowable Working Pressure (MAWP) (UG-27 / Appendix 1-2)
+- [x] Cylindrical Shells — Solve for Maximum Allowable Working Pressure (MAWP) (UG-27 / Appendix 1-2)
 - [ ] **To-Do:** Spherical Shells — Minimum Required Thickness & MAWP (UG-27(d) / Appendix 1-3)
 - [x] Ellipsoidal Heads — Minimum Required Thickness (UG-32(c) / Appendix 1-4)
 - [x] Torispherical Heads — Minimum Required Thickness (UG-32(d) / Appendix 1-4)
 - [x] Hemispherical Heads — Minimum Required Thickness (UG-32(e) / Appendix 1-3)
 - [ ] **To-Do:** Conical Heads & Sections — Minimum Required Thickness & MAWP (UG-32(f) / Appendix 1-4)
-- [ ] **To-Do:** Formed Heads — Solve for Maximum Allowable Working Pressure (MAWP) (UG-32)
+- [x] Formed Heads — Solve for Maximum Allowable Working Pressure (MAWP) (UG-32)
 - [ ] **External Pressure & Vacuum (UG-28 / UG-33):** Iterative algorithm for shell and head buckling verification
 - [ ] **Stiffening Rings (UG-29):** Required moment of inertia sizing for external pressure stiffening rings
 

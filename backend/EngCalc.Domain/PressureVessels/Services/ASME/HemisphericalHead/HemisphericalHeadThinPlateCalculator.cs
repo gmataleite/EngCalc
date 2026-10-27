@@ -21,4 +21,20 @@ internal class HemisphericalHeadThinPlateCalculator : HemisphericalHeadBase
 
         return Length.FromMillimeters(thickness);
     }
+
+    public override Pressure CalculateMAWP(Length corrodedThickness, Length internalRadius, Pressure allowableStress, double jointEfficiency)
+    {
+        var (t, L, S, E) = GetMawpConstants(corrodedThickness, internalRadius, allowableStress, jointEfficiency);
+
+        double denominator = L + 0.2 * t;
+        if (denominator <= 0)
+        {
+            throw new InvalidOperationException(
+                "Invalid geometry for thin-plate hemispherical head MAWP calculation (UG-32(e)).");
+        }
+
+        double pressure = (2.0 * S * E * t) / denominator;
+
+        return Pressure.FromMegapascals(pressure);
+    }
 }

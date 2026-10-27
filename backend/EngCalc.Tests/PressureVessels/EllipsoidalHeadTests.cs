@@ -128,5 +128,58 @@ public class EllipsoidalHeadTests
         // Assert 
         Assert.Equal(expectedThickness.Millimeters, actualThickness.Millimeters, 3);
     }
-}
 
+    [Fact]
+    public void CalculateMaximumAllowableWorkingPressure_DefaultRatio_ShouldReturnCorrectMawp()
+    {
+        // Arrange
+        var nominalThickness = Length.FromMillimeters(20.07939);
+        var internalDiameter = Length.FromMillimeters(2000.0);
+        var allowableStress = Pressure.FromMegapascals(138.0);
+        var allowableCorrosion = Length.FromMillimeters(3.0);
+        var jointEfficiency = 0.85;
+        var fluidColumnPressure = Pressure.FromMegapascals(0.5);
+
+        var ellipsoidalHead = new EllipsoidalHead(
+            nominalThickness,
+            internalDiameter,
+            allowableStress,
+            allowableCorrosion,
+            jointEfficiency,
+            fluidColumnPressure);
+
+        // Act
+        var actualMawp = ellipsoidalHead.CalculateMaximumAllowableWorkingPressure();
+
+        // Assert
+        Assert.Equal(1.500, actualMawp.Megapascals, 3);
+    }
+
+    [Fact]
+    public void CalculateMaximumAllowableWorkingPressure_WithHeadHeightInput_ShouldReturnCorrectMawp()
+    {
+        // Arrange
+        var nominalThickness = Length.FromMillimeters(40.32204);
+        var internalDiameter = Length.FromMillimeters(2000.0);
+        var allowableStress = Pressure.FromMegapascals(138.0);
+        var allowableCorrosion = Length.FromMillimeters(3.0);
+        var jointEfficiency = 0.85;
+        var fluidColumnPressure = Pressure.FromMegapascals(0.5);
+        var headHeight = Length.FromMillimeters(300.0);
+
+        var ellipsoidalHead = new EllipsoidalHead(
+            nominalThickness,
+            internalDiameter,
+            allowableStress,
+            allowableCorrosion,
+            jointEfficiency,
+            fluidColumnPressure,
+            headHeight);
+
+        // Act
+        var actualMawp = ellipsoidalHead.CalculateMaximumAllowableWorkingPressure();
+
+        // Assert
+        Assert.Equal(1.500, actualMawp.Megapascals, 3);
+    }
+}

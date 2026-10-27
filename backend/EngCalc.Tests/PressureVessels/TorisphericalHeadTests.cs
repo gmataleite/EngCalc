@@ -128,5 +128,60 @@ public class TorisphericalHeadTests
         // Assert 
         Assert.Equal(expectedThickness.Millimeters, actualThickness.Millimeters, 3);
     }
-}
 
+    [Fact]
+    public void CalculateMaximumAllowableWorkingPressure_DefaultRatio_ShouldReturnCorrectMawp()
+    {
+        // Arrange
+        var nominalThickness = Length.FromMillimeters(33.24056);
+        var crownRadius = Length.FromMillimeters(2000.0);
+        var knuckleRadius = Length.FromMillimeters(120.0);
+        var allowableStress = Pressure.FromMegapascals(138.0);
+        var allowableCorrosion = Length.FromMillimeters(3.0);
+        var jointEfficiency = 0.85;
+        var fluidColumnPressure = Pressure.FromMegapascals(0.5);
+
+        var torisphericalHead = new TorisphericalHead(
+            nominalThickness,
+            crownRadius,
+            knuckleRadius,
+            allowableStress,
+            allowableCorrosion,
+            jointEfficiency,
+            fluidColumnPressure);
+
+        // Act
+        var actualMawp = torisphericalHead.CalculateMaximumAllowableWorkingPressure();
+
+        // Assert
+        Assert.Equal(1.500, actualMawp.Megapascals, 3);
+    }
+
+    [Fact]
+    public void CalculateMaximumAllowableWorkingPressure_WithDiameterAndRatioInput_ShouldReturnCorrectMawp()
+    {
+        // Arrange
+        var nominalThickness = Length.FromMillimeters(29.31196);
+        var internalDiameter = Length.FromMillimeters(2000.0);
+        var ratio = 0.1;
+        var allowableStress = Pressure.FromMegapascals(138.0);
+        var allowableCorrosion = Length.FromMillimeters(3.0);
+        var jointEfficiency = 0.85;
+        var fluidColumnPressure = Pressure.FromMegapascals(0.5);
+
+        var torisphericalHead = new TorisphericalHead(
+            nominalThickness,
+            internalDiameter,
+            allowableStress,
+            allowableCorrosion,
+            jointEfficiency,
+            fluidColumnPressure,
+            ratio);
+
+        // Act
+        var actualMawp = torisphericalHead.CalculateMaximumAllowableWorkingPressure();
+
+        // Assert
+        Assert.Equal(1.500, actualMawp.Megapascals, 3);
+    }
+}

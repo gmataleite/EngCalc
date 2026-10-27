@@ -15,6 +15,6 @@ public record HeadThicknessRequestDto(
     string JointTypeId,
     string RtId,
     double CorrosionAllowance,
-    double? AllowableStressOverride
+    double? AllowableStressOverride,
+    double? Thickness = null
 );
-

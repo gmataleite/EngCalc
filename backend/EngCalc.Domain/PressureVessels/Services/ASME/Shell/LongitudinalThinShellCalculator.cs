@@ -1,5 +1,6 @@
 namespace EngCalc.Domain.PressureVessels;
 
+using System;
 using UnitsNet;
 using UnitsNet.Units;
 
@@ -13,5 +14,20 @@ internal class LongitudinalThinShellCalculator : ShellCalculatorBase // ASME VII
         
         return Length.FromMillimeters(thickness);
     }
-}
 
+    public override Pressure CalculateMAWP(Length corrodedThickness, Length internalRadius, Pressure allowableStress, double jointEfficiency)
+    {
+        var (t, R, S, E) = GetMawpConstants(corrodedThickness, internalRadius, allowableStress, jointEfficiency);
+
+        double denominator = R - (0.4 * t);
+        if (denominator <= 0)
+        {
+            throw new InvalidOperationException(
+                "Corroded thickness (t) exceeds the geometric limit for thin-wall longitudinal stress calculation (UG-27(c)(2)).");
+        }
+
+        double pressure = (2.0 * S * E * t) / denominator;
+
+        return Pressure.FromMegapascals(pressure);
+    }
+}

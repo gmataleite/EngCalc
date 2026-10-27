@@ -22,4 +22,14 @@ internal class HemisphericalHeadThickPlateCalculator : HemisphericalHeadBase
 
         return Length.FromMillimeters(thickness);
     }
+
+    public override Pressure CalculateMAWP(Length corrodedThickness, Length internalRadius, Pressure allowableStress, double jointEfficiency)
+    {
+        var (t, L, S, E) = GetMawpConstants(corrodedThickness, internalRadius, allowableStress, jointEfficiency);
+
+        double Y = Math.Pow((L + t) / L, 3.0);
+        double pressure = 2.0 * S * E * ((Y - 1.0) / (Y + 2.0));
+
+        return Pressure.FromMegapascals(pressure);
+    }
 }
