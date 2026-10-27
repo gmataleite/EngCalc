@@ -3,7 +3,7 @@ import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { AxiosError } from "axios"
-import { Check, ChevronsUpDown, AlertTriangle, Pin } from "lucide-react"
+import { Check, ChevronsUpDown, AlertTriangle } from "lucide-react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -82,6 +82,7 @@ export default function HeadThicknessPage() {
 
   const unitSystem: UnitSystem = watchedValues.unitSystem ?? "metric"
   const headType: HeadType = watchedValues.headType ?? "ellipsoidal"
+  const mode: CalculationMode = watchedValues.mode ?? "min_thickness"
   const activeUnits = HEAD_THICKNESS_TEXTS.units[unitSystem]
 
   // Ensure valid initial materialId when materials load from the backend
@@ -98,9 +99,13 @@ export default function HeadThicknessPage() {
 
   // Trigger calculation automatically when debounced form inputs are valid
   const mutateCalculation = calculationMutation.mutate
+  const resetCalculation = calculationMutation.reset
   useEffect(() => {
     const parsed = headThicknessFormSchema.safeParse(debouncedValues)
-    if (!parsed.success) return
+    if (!parsed.success) {
+      resetCalculation()
+      return
+    }
 
     const v = parsed.data
     const payload: HeadThicknessCalculationRequest = {
@@ -109,7 +114,9 @@ export default function HeadThicknessPage() {
       mode: v.mode,
       materialId: v.materialId,
       designTemperature: v.designTemperature,
-      internalPressure: v.internalPressure,
+      internalPressure:
+        v.mode === "min_thickness" ? v.internalPressure : undefined,
+      thickness: v.mode === "mawp" ? v.thickness : undefined,
       insideDiameter: v.insideDiameter,
       crownRadius: v.crownRadius,
       knuckleRadius: v.knuckleRadius,
@@ -123,7 +130,7 @@ export default function HeadThicknessPage() {
     }
 
     mutateCalculation(payload)
-  }, [debouncedValues, mutateCalculation])
+  }, [debouncedValues, mutateCalculation, resetCalculation])
 
   const selectedMaterial = useMemo(() => {
     return materialsQuery.data?.find((m) => m.id === watchedValues.materialId)
@@ -150,58 +157,40 @@ export default function HeadThicknessPage() {
     if (!calculationMutation.error) return null
     if (calculationMutation.error instanceof AxiosError) {
       const responseData = calculationMutation.error.response?.data as
-        { message?: string } | undefined
+        | { message?: string }
+        | undefined
       return (
         responseData?.message ??
         calculationMutation.error.message ??
-        "Unable to compute head thickness."
+        "Unable to compute head calculation."
       )
     }
     return calculationMutation.error instanceof Error
       ? calculationMutation.error.message
-      : "Unable to compute head thickness."
+      : "Unable to compute head calculation."
   }, [calculationMutation.error])
 
   const formattedAllowableStress = result
-    ? `${result.allowableStress.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })} ${result.pressureUnit}`
+    ? `${result.allowableStress.toFixed(2)} ${result.pressureUnit}`
     : `— ${activeUnits.pressure}`
 
   const formattedJointEfficiency = result
-    ? `${result.jointEfficiency.toFixed(2)} (${result.jointEfficiencyPercent.toFixed(0)}%)`
-    : "—"
+    ? `${result.jointEfficiencyPercent.toFixed(0)} %`
+    : "— %"
 
   const formattedTotalThickness = result
     ? `${result.totalMinimumThickness.toFixed(4)} ${result.lengthUnit}`
     : `— ${activeUnits.length}`
 
-  const fallbackActiveLogic = useMemo(() => {
-    switch (headType) {
-      case "torispherical":
-        return "Torispherical Heads (UG-32(d) / Appendix 1-4(d))"
-      case "hemispherical":
-        return "Hemispherical Heads (UG-32(e) / Appendix 1-3)"
-      default:
-        return "Ellipsoidal Heads (UG-32(c))"
-    }
-  }, [headType])
-
-  const fallbackReferenceLatex = useMemo(() => {
-    switch (headType) {
-      case "torispherical":
-        return String.raw`t = \frac{P \cdot L \cdot M}{2SE - 0.2P} + CA`
-      case "hemispherical":
-        return String.raw`t = \frac{P \cdot L}{2SE - 0.2P} + CA`
-      default:
-        return String.raw`t = \frac{P \cdot D}{2SE - 0.2P} + CA`
-    }
-  }, [headType])
+  const formattedMawp =
+    result?.maximumAllowableWorkingPressure !== undefined &&
+    result?.maximumAllowableWorkingPressure !== null
+      ? `${result.maximumAllowableWorkingPressure.toFixed(4)} ${result.pressureUnit}`
+      : `— ${activeUnits.pressure}`
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-12">
-      {/* Page Header & Top Configuration */}
+      {/* Page Title & Section 1: Configuration Radio Groups */}
       <section className="space-y-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
@@ -212,7 +201,7 @@ export default function HeadThicknessPage() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 pt-2 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 pt-2 md:grid-cols-3">
           {/* Unit System */}
           <div className="space-y-2">
             <Label className="text-xs font-medium text-muted-foreground">
@@ -258,6 +247,7 @@ export default function HeadThicknessPage() {
                   form.setValue("headType", val as HeadType, {
                     shouldValidate: true,
                   })
+                  void form.trigger(["knuckleRadius", "crownRadius"])
                 }
               }}
               className="flex flex-wrap items-center gap-4 pt-1"
@@ -288,288 +278,386 @@ export default function HeadThicknessPage() {
               </label>
             </RadioGroup>
           </div>
-        </div>
-      </section>
 
-      <Separator />
-
-      {/* Step 1: Material & Environmental Conditions */}
-      <section className="space-y-4">
-        <h3 className="text-base font-semibold text-foreground">
-          {HEAD_THICKNESS_TEXTS.step1.title}
-        </h3>
-
-        <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
-          {/* Left: Material Specification & Design Temperature */}
-          <div className="space-y-4">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-normal text-muted-foreground">
-                {HEAD_THICKNESS_TEXTS.step1.materialLabel}
-              </Label>
-              <Popover
-                open={materialPopoverOpen}
-                onOpenChange={setMaterialPopoverOpen}
-              >
-                <PopoverTrigger
-                  render={
-                    <Button
-                      type="button"
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={materialPopoverOpen}
-                      className="h-9 w-full justify-between bg-muted/40 px-3 text-xs font-normal text-foreground"
-                    />
-                  }
-                >
-                  <span className="truncate">
-                    {selectedMaterial
-                      ? selectedMaterial.label
-                      : HEAD_THICKNESS_TEXTS.step1.materialPlaceholder}
-                  </span>
-                  <ChevronsUpDown className="ml-2 size-3.5 shrink-0 opacity-50" />
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-0" align="start">
-                  <Command>
-                    <CommandInput
-                      placeholder={
-                        HEAD_THICKNESS_TEXTS.step1.materialSearchPlaceholder
-                      }
-                    />
-                    <CommandList>
-                      <CommandEmpty>
-                        {HEAD_THICKNESS_TEXTS.step1.materialEmptyText}
-                      </CommandEmpty>
-                      <CommandGroup>
-                        {(materialsQuery.data ?? []).map((mat) => {
-                          const isSelected = mat.id === watchedValues.materialId
-                          return (
-                            <CommandItem
-                              key={mat.id}
-                              value={`${mat.id} ${mat.label}`}
-                              data-checked={isSelected}
-                              onSelect={() => {
-                                form.setValue("materialId", mat.id, {
-                                  shouldValidate: true,
-                                })
-                                setMaterialPopoverOpen(false)
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-1.5 size-3.5",
-                                  isSelected ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <span className="truncate">{mat.label}</span>
-                            </CommandItem>
-                          )
-                        })}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <NumberStepperField
-              id="designTemperature"
-              label={HEAD_THICKNESS_TEXTS.step1.designTempLabel(
-                activeUnits.temperature
-              )}
-              value={watchedValues.designTemperature ?? 40}
-              step={5}
-              error={form.formState.errors.designTemperature?.message}
-              onChange={(next) =>
-                form.setValue("designTemperature", next, {
-                  shouldValidate: true,
-                })
-              }
-            />
-          </div>
-
-          {/* Right: Allowable Stress (S) */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-foreground">
-              {HEAD_THICKNESS_TEXTS.step1.allowableStressTitle}
-            </h4>
-
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-foreground">
-              <Checkbox
-                checked={Boolean(watchedValues.manualOverrideEnabled)}
-                onCheckedChange={(checked) => {
-                  form.setValue("manualOverrideEnabled", Boolean(checked), {
-                    shouldValidate: true,
-                  })
-                }}
-              />
-              <span>{HEAD_THICKNESS_TEXTS.step1.manualOverrideLabel}</span>
-            </label>
-
-            {watchedValues.manualOverrideEnabled ? (
-              <NumberStepperField
-                id="allowableStressOverride"
-                label={HEAD_THICKNESS_TEXTS.step1.manualInputLabel(
-                  activeUnits.pressure
-                )}
-                value={watchedValues.allowableStressOverride ?? 138}
-                step={5}
-                min={0.1}
-                error={form.formState.errors.allowableStressOverride?.message}
-                onChange={(next) =>
-                  form.setValue("allowableStressOverride", next, {
-                    shouldValidate: true,
-                  })
-                }
-              />
-            ) : null}
-
-            <MetricCard
-              label={HEAD_THICKNESS_TEXTS.step1.allowableStressCardLabel}
-              value={formattedAllowableStress}
-            />
-          </div>
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* Step 2: Welding Joint & Efficiency (E) */}
-      <section className="space-y-4">
-        <h3 className="text-base font-semibold text-foreground">
-          {HEAD_THICKNESS_TEXTS.step2.title}
-        </h3>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-normal text-muted-foreground">
-                {HEAD_THICKNESS_TEXTS.step2.jointTypeLabel}
-              </Label>
-              <Select
-                value={watchedValues.jointTypeId}
-                onValueChange={(val) => {
-                  if (typeof val === "string") {
-                    form.setValue("jointTypeId", val, { shouldValidate: true })
-                  }
-                }}
-              >
-                <SelectTrigger className="h-9 w-full bg-muted/40 px-3 text-xs">
-                  <SelectValue>{selectedJointTypeLabel}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {(optionsQuery.data?.jointTypes ?? []).map((joint) => (
-                    <SelectItem key={joint.id} value={joint.id}>
-                      {joint.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <MetricCard
-              label={HEAD_THICKNESS_TEXTS.step2.jointEfficiencyCardLabel}
-              value={formattedJointEfficiency}
-            />
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-normal text-muted-foreground">
-                {HEAD_THICKNESS_TEXTS.step2.rtLabel}
-              </Label>
-              <Select
-                value={watchedValues.rtId}
-                onValueChange={(val) => {
-                  if (typeof val === "string") {
-                    form.setValue("rtId", val, { shouldValidate: true })
-                  }
-                }}
-              >
-                <SelectTrigger className="h-9 w-full bg-muted/40 px-3 text-xs">
-                  <SelectValue>{selectedRtLabel}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {(optionsQuery.data?.rtOptions ?? []).map((rt) => (
-                    <SelectItem key={rt.id} value={rt.id}>
-                      {rt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* Step 3: Calculation Mode & Geometry */}
-      <section className="space-y-4">
-        <h3 className="text-base font-semibold text-foreground">
-          {HEAD_THICKNESS_TEXTS.step3.title}
-        </h3>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Calculation Mode */}
           <div className="space-y-2">
             <Label className="text-xs font-medium text-muted-foreground">
-              {HEAD_THICKNESS_TEXTS.step3.modeLabel}
+              {HEAD_THICKNESS_TEXTS.topConfig.modeLabel}
             </Label>
             <RadioGroup
               value={watchedValues.mode}
               onValueChange={(val) => {
-                if (val === "min_thickness") {
+                if (val === "min_thickness" || val === "mawp") {
                   form.setValue("mode", val as CalculationMode, {
                     shouldValidate: true,
                   })
+                  void form.trigger([
+                    "thickness",
+                    "corrosionAllowance",
+                    "internalPressure",
+                  ])
                 }
               }}
-              className="flex flex-col gap-2.5 pt-1"
+              className="flex flex-wrap items-center gap-4 pt-1"
             >
               <label className="flex cursor-pointer items-center gap-2 text-xs text-foreground">
                 <RadioGroupItem value="min_thickness" />
                 <span>
-                  {HEAD_THICKNESS_TEXTS.step3.modeOptions.minThickness}
+                  {HEAD_THICKNESS_TEXTS.topConfig.modeOptions.minThickness}
                 </span>
               </label>
-              <label className="flex cursor-not-allowed items-center gap-2 text-xs text-muted-foreground opacity-60">
-                <RadioGroupItem value="mawp" disabled />
-                <span>{HEAD_THICKNESS_TEXTS.step3.modeOptions.mawp}</span>
+              <label className="flex cursor-pointer items-center gap-2 text-xs text-foreground">
+                <RadioGroupItem value="mawp" />
+                <span>{HEAD_THICKNESS_TEXTS.topConfig.modeOptions.mawp}</span>
               </label>
             </RadioGroup>
-          </div>
-
-          <div>
-            <NumberStepperField
-              id="corrosionAllowance"
-              label={HEAD_THICKNESS_TEXTS.step3.corrosionAllowanceLabel(
-                activeUnits.length
-              )}
-              value={watchedValues.corrosionAllowance ?? 3}
-              step={0.5}
-              min={0}
-              error={form.formState.errors.corrosionAllowance?.message}
-              onChange={(next) =>
-                form.setValue("corrosionAllowance", next, {
-                  shouldValidate: true,
-                })
-              }
-            />
           </div>
         </div>
       </section>
 
       <Separator />
 
-      {/* Active Logic Banner + Head Geometry Inputs + Result */}
-      <section className="space-y-5">
+      {/* Section 2: Material & Environment | Geometry & Target | Fabrication & Corrosion */}
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {/* Column 1: Material & Environment */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-foreground">
+            {HEAD_THICKNESS_TEXTS.section2.materialColumnTitle}
+          </h3>
+
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs font-normal text-muted-foreground">
+              {HEAD_THICKNESS_TEXTS.section2.materialLabel}
+            </Label>
+            <Popover
+              open={materialPopoverOpen}
+              onOpenChange={setMaterialPopoverOpen}
+            >
+              <PopoverTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={materialPopoverOpen}
+                    className="h-9 w-full justify-between bg-muted/40 px-3 text-xs font-normal text-foreground"
+                  />
+                }
+              >
+                <span className="truncate">
+                  {selectedMaterial
+                    ? selectedMaterial.label
+                    : HEAD_THICKNESS_TEXTS.section2.materialPlaceholder}
+                </span>
+                <ChevronsUpDown className="ml-2 size-3.5 shrink-0 opacity-50" />
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="start">
+                <Command>
+                  <CommandInput
+                    placeholder={
+                      HEAD_THICKNESS_TEXTS.section2.materialSearchPlaceholder
+                    }
+                  />
+                  <CommandList>
+                    <CommandEmpty>
+                      {HEAD_THICKNESS_TEXTS.section2.materialEmptyText}
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {(materialsQuery.data ?? []).map((mat) => {
+                        const isSelected = mat.id === watchedValues.materialId
+                        return (
+                          <CommandItem
+                            key={mat.id}
+                            value={`${mat.id} ${mat.label}`}
+                            data-checked={isSelected}
+                            onSelect={() => {
+                              form.setValue("materialId", mat.id, {
+                                shouldValidate: true,
+                              })
+                              setMaterialPopoverOpen(false)
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-1.5 size-3.5",
+                                isSelected ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <span className="truncate">{mat.label}</span>
+                          </CommandItem>
+                        )
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <NumberStepperField
+            id="designTemperature"
+            label={HEAD_THICKNESS_TEXTS.section2.designTempLabel(
+              activeUnits.temperature
+            )}
+            value={watchedValues.designTemperature ?? 40}
+            step={5}
+            error={form.formState.errors.designTemperature?.message}
+            onChange={(next) =>
+              form.setValue("designTemperature", next, {
+                shouldValidate: true,
+              })
+            }
+          />
+        </div>
+
+        {/* Column 2: Geometry & Target */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-foreground">
+            {HEAD_THICKNESS_TEXTS.section2.geometryColumnTitle}
+          </h3>
+
+          {headType === "ellipsoidal" ? (
+            <NumberStepperField
+              id="insideDiameter"
+              label={HEAD_THICKNESS_TEXTS.section2.insideDiameterLabel(
+                activeUnits.length
+              )}
+              value={watchedValues.insideDiameter ?? 1200}
+              step={10}
+              min={0.01}
+              error={form.formState.errors.insideDiameter?.message}
+              onChange={(next) =>
+                form.setValue("insideDiameter", next, {
+                  shouldValidate: true,
+                })
+              }
+            />
+          ) : null}
+
+          {headType === "torispherical" ? (
+            <>
+              <NumberStepperField
+                id="crownRadius"
+                label={HEAD_THICKNESS_TEXTS.section2.crownRadiusLabel(
+                  activeUnits.length
+                )}
+                value={watchedValues.crownRadius ?? 1200}
+                step={10}
+                min={0.01}
+                error={form.formState.errors.crownRadius?.message}
+                onChange={(next) => {
+                  form.setValue("crownRadius", next, { shouldValidate: true })
+                  void form.trigger("knuckleRadius")
+                }}
+              />
+
+              <NumberStepperField
+                id="knuckleRadius"
+                label={HEAD_THICKNESS_TEXTS.section2.knuckleRadiusLabel(
+                  activeUnits.length
+                )}
+                value={watchedValues.knuckleRadius ?? 72}
+                step={5}
+                min={0.01}
+                error={form.formState.errors.knuckleRadius?.message}
+                onChange={(next) => {
+                  form.setValue("knuckleRadius", next, {
+                    shouldValidate: true,
+                  })
+                  void form.trigger("crownRadius")
+                }}
+              />
+            </>
+          ) : null}
+
+          {headType === "hemispherical" ? (
+            <NumberStepperField
+              id="insideRadius"
+              label={HEAD_THICKNESS_TEXTS.section2.insideRadiusLabel(
+                activeUnits.length
+              )}
+              value={watchedValues.insideRadius ?? 600}
+              step={10}
+              min={0.01}
+              error={form.formState.errors.insideRadius?.message}
+              onChange={(next) =>
+                form.setValue("insideRadius", next, { shouldValidate: true })
+              }
+            />
+          ) : null}
+
+          {mode === "mawp" ? (
+            <NumberStepperField
+              id="thickness"
+              label={HEAD_THICKNESS_TEXTS.section2.nominalThicknessLabel(
+                activeUnits.length
+              )}
+              value={watchedValues.thickness ?? 12}
+              step={0.5}
+              min={0.01}
+              error={form.formState.errors.thickness?.message}
+              onChange={(next) => {
+                form.setValue("thickness", next, {
+                  shouldValidate: true,
+                })
+                void form.trigger("corrosionAllowance")
+              }}
+            />
+          ) : (
+            <NumberStepperField
+              id="internalPressure"
+              label={HEAD_THICKNESS_TEXTS.section2.internalPressureLabel(
+                activeUnits.pressure
+              )}
+              value={watchedValues.internalPressure ?? 1}
+              step={0.1}
+              min={0.01}
+              error={form.formState.errors.internalPressure?.message}
+              onChange={(next) =>
+                form.setValue("internalPressure", next, {
+                  shouldValidate: true,
+                })
+              }
+            />
+          )}
+        </div>
+
+        {/* Column 3: Fabrication & Corrosion */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-foreground">
+            {HEAD_THICKNESS_TEXTS.section2.fabricationColumnTitle}
+          </h3>
+
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs font-normal text-muted-foreground">
+              {HEAD_THICKNESS_TEXTS.section2.jointTypeLabel}
+            </Label>
+            <Select
+              value={watchedValues.jointTypeId}
+              onValueChange={(val) => {
+                if (typeof val === "string") {
+                  form.setValue("jointTypeId", val, { shouldValidate: true })
+                }
+              }}
+            >
+              <SelectTrigger className="h-9 w-full bg-muted/40 px-3 text-xs">
+                <SelectValue>{selectedJointTypeLabel}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {(optionsQuery.data?.jointTypes ?? []).map((joint) => (
+                  <SelectItem key={joint.id} value={joint.id}>
+                    {joint.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs font-normal text-muted-foreground">
+              {HEAD_THICKNESS_TEXTS.section2.rtLabel}
+            </Label>
+            <Select
+              value={watchedValues.rtId}
+              onValueChange={(val) => {
+                if (typeof val === "string") {
+                  form.setValue("rtId", val, { shouldValidate: true })
+                }
+              }}
+            >
+              <SelectTrigger className="h-9 w-full bg-muted/40 px-3 text-xs">
+                <SelectValue>{selectedRtLabel}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {(optionsQuery.data?.rtOptions ?? []).map((rt) => (
+                  <SelectItem key={rt.id} value={rt.id}>
+                    {rt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <NumberStepperField
+            id="corrosionAllowance"
+            label={HEAD_THICKNESS_TEXTS.section2.corrosionAllowanceLabel(
+              activeUnits.length
+            )}
+            value={watchedValues.corrosionAllowance ?? 3}
+            step={0.5}
+            min={0}
+            error={form.formState.errors.corrosionAllowance?.message}
+            onChange={(next) => {
+              form.setValue("corrosionAllowance", next, {
+                shouldValidate: true,
+              })
+              void form.trigger("thickness")
+            }}
+          />
+        </div>
+      </section>
+
+      <Separator />
+
+      {/* Section 3: Allowable Stress (S) Configuration */}
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold text-foreground">
+          {HEAD_THICKNESS_TEXTS.section3.title}
+        </h3>
+
+        <div className="max-w-xl space-y-3">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-foreground">
+            <Checkbox
+              checked={Boolean(watchedValues.manualOverrideEnabled)}
+              onCheckedChange={(checked) => {
+                form.setValue("manualOverrideEnabled", Boolean(checked), {
+                  shouldValidate: true,
+                })
+                void form.trigger("allowableStressOverride")
+              }}
+            />
+            <span>{HEAD_THICKNESS_TEXTS.section3.manualOverrideLabel}</span>
+          </label>
+
+          {watchedValues.manualOverrideEnabled ? (
+            <NumberStepperField
+              id="allowableStressOverride"
+              label={HEAD_THICKNESS_TEXTS.section3.manualInputLabel(
+                activeUnits.pressure
+              )}
+              value={watchedValues.allowableStressOverride ?? 138}
+              step={5}
+              min={0.1}
+              error={form.formState.errors.allowableStressOverride?.message}
+              onChange={(next) =>
+                form.setValue("allowableStressOverride", next, {
+                  shouldValidate: true,
+                })
+              }
+            />
+          ) : (
+            <Alert className="border-sky-200 bg-sky-50/80 py-3 text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-200">
+              <AlertDescription className="text-xs text-sky-800 dark:text-sky-200">
+                {HEAD_THICKNESS_TEXTS.section3.autoInterpolatedMessage}
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </section>
+
+      <Separator />
+
+      {/* Section 4: Calculation Results */}
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <Alert className="border-sky-200 bg-sky-50/80 py-3 text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-200">
-            <Pin className="size-4 text-rose-600 dark:text-rose-400" />
-            <AlertDescription className="text-xs font-medium text-sky-800 dark:text-sky-200">
-              {HEAD_THICKNESS_TEXTS.step4.activeLogicPrefix}{" "}
-              {result?.activeLogic ?? fallbackActiveLogic}
-            </AlertDescription>
-          </Alert>
+          <h3 className="text-sm font-semibold text-foreground">
+            {HEAD_THICKNESS_TEXTS.section4.title}
+          </h3>
+          {calculationMutation.isPending ? (
+            <span className="text-xs text-muted-foreground">
+              {HEAD_THICKNESS_TEXTS.section4.calculatingMessage}
+            </span>
+          ) : null}
         </div>
 
         {apiErrorMessage ? (
@@ -595,121 +683,26 @@ export default function HeadThicknessPage() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
-          {/* Left Column: Geometric Inputs specific to Head Type */}
-          <div className="space-y-4">
-            {headType === "ellipsoidal" ? (
-              <NumberStepperField
-                id="insideDiameter"
-                label={HEAD_THICKNESS_TEXTS.step4.insideDiameterLabel(
-                  activeUnits.length
-                )}
-                value={watchedValues.insideDiameter ?? 1200}
-                step={10}
-                min={0.01}
-                error={form.formState.errors.insideDiameter?.message}
-                onChange={(next) =>
-                  form.setValue("insideDiameter", next, {
-                    shouldValidate: true,
-                  })
-                }
-              />
-            ) : null}
-
-            {headType === "torispherical" ? (
-              <>
-                <NumberStepperField
-                  id="crownRadius"
-                  label={HEAD_THICKNESS_TEXTS.step4.crownRadiusLabel(
-                    activeUnits.length
-                  )}
-                  value={watchedValues.crownRadius ?? 1200}
-                  step={10}
-                  min={0.01}
-                  error={form.formState.errors.crownRadius?.message}
-                  onChange={(next) =>
-                    form.setValue("crownRadius", next, { shouldValidate: true })
-                  }
-                />
-
-                <NumberStepperField
-                  id="knuckleRadius"
-                  label={HEAD_THICKNESS_TEXTS.step4.knuckleRadiusLabel(
-                    activeUnits.length
-                  )}
-                  value={watchedValues.knuckleRadius ?? 72}
-                  step={5}
-                  min={0.01}
-                  error={form.formState.errors.knuckleRadius?.message}
-                  onChange={(next) =>
-                    form.setValue("knuckleRadius", next, {
-                      shouldValidate: true,
-                    })
-                  }
-                />
-              </>
-            ) : null}
-
-            {headType === "hemispherical" ? (
-              <NumberStepperField
-                id="insideRadius"
-                label={HEAD_THICKNESS_TEXTS.step4.insideRadiusLabel(
-                  activeUnits.length
-                )}
-                value={watchedValues.insideRadius ?? 600}
-                step={10}
-                min={0.01}
-                error={form.formState.errors.insideRadius?.message}
-                onChange={(next) =>
-                  form.setValue("insideRadius", next, { shouldValidate: true })
-                }
-              />
-            ) : null}
-          </div>
-
-          {/* Right Column: Internal Design Pressure + Minimum Thickness Result + Reference Latex */}
-          <div className="space-y-4">
-            <NumberStepperField
-              id="internalPressure"
-              label={HEAD_THICKNESS_TEXTS.step4.internalPressureLabel(
-                activeUnits.pressure
-              )}
-              value={watchedValues.internalPressure ?? 1}
-              step={0.1}
-              min={0.01}
-              error={form.formState.errors.internalPressure?.message}
-              onChange={(next) =>
-                form.setValue("internalPressure", next, {
-                  shouldValidate: true,
-                })
-              }
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          <MetricCard
+            label={HEAD_THICKNESS_TEXTS.section4.jointEfficiencyCardLabel}
+            value={formattedJointEfficiency}
+          />
+          <MetricCard
+            label={HEAD_THICKNESS_TEXTS.section4.allowableStressCardLabel}
+            value={formattedAllowableStress}
+          />
+          {mode === "mawp" ? (
+            <MetricCard
+              label={HEAD_THICKNESS_TEXTS.section4.mawpCardLabel}
+              value={formattedMawp}
             />
-
-            <div className="space-y-3 pt-1">
-              <div className="flex items-center justify-between">
-                <MetricCard
-                  label={HEAD_THICKNESS_TEXTS.step4.minThicknessCardLabel}
-                  value={formattedTotalThickness}
-                />
-                {calculationMutation.isPending ? (
-                  <span className="text-xs text-muted-foreground">
-                    {HEAD_THICKNESS_TEXTS.step4.calculatingMessage}
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">
-                  {HEAD_THICKNESS_TEXTS.step4.referencePrefix}
-                </span>
-                <Latex
-                  formula={fallbackReferenceLatex}
-                  displayMode={false}
-                  className="py-0"
-                />
-              </div>
-            </div>
-          </div>
+          ) : (
+            <MetricCard
+              label={HEAD_THICKNESS_TEXTS.section4.minThicknessCardLabel}
+              value={formattedTotalThickness}
+            />
+          )}
         </div>
 
         {result?.breakdown ? (
@@ -723,24 +716,31 @@ export default function HeadThicknessPage() {
 
       <Separator />
 
-      {/* Formula Reference (ASME BPVC Section VIII Div 1 — UG-32 & Appendix 1) */}
-      <section className="space-y-4">
-        <h3 className="text-base font-semibold text-foreground">
+      {/* Section 5: Formula Reference (ASME BPVC Section VIII Div 1 — UG-32 & Appendix 1) */}
+      <section className="space-y-6">
+        <h3 className="text-sm font-semibold text-foreground">
           {HEAD_THICKNESS_TEXTS.formulaReference.title}
         </h3>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {HEAD_THICKNESS_TEXTS.formulaReference.items.map((item) => (
-            <div key={item.title} className="space-y-2">
-              <h4 className="text-xs font-semibold text-foreground">
-                {item.title}
-              </h4>
-              <div className="rounded-md bg-muted/20 p-3">
-                <Latex formula={item.latex} displayMode />
-              </div>
+        {HEAD_THICKNESS_TEXTS.formulaReference.groups.map((group) => (
+          <div key={group.groupTitle} className="space-y-3">
+            <h4 className="text-xs font-semibold text-muted-foreground">
+              {group.groupTitle}
+            </h4>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {group.items.map((item) => (
+                <div key={item.title} className="space-y-2">
+                  <h5 className="text-xs font-semibold text-foreground">
+                    {item.title}
+                  </h5>
+                  <div className="rounded-md bg-muted/20 p-3">
+                    <Latex formula={item.latex} displayMode />
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </section>
     </div>
   )

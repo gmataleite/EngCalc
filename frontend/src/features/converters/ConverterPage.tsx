@@ -358,14 +358,26 @@ export default function ConverterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Unit selection, Stepper & Result Grid */}
-          <div className="grid grid-cols-1 items-end gap-6 md:grid-cols-[1fr,auto,1fr]">
-            {/* Left: Source Unit & Initial Value */}
-            <div className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-normal text-muted-foreground">
-                  {CONVERTER_TEXTS.converter.initialUnitLabel}
-                </Label>
+          {/* Stepper, Unit Selection & Result Stack */}
+          <div className="space-y-4">
+            {/* 1. Initial Value */}
+            <NumberStepperField
+              id="initialValue"
+              label={CONVERTER_TEXTS.converter.initialValueLabel(initialUnit)}
+              value={initialValue ?? 0}
+              step={1}
+              error={form.formState.errors.initialValue?.message}
+              onChange={(next) =>
+                form.setValue("initialValue", next, { shouldValidate: true })
+              }
+            />
+
+            {/* 2. From Unit + Swap Button inline */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-normal text-muted-foreground">
+                {CONVERTER_TEXTS.converter.initialUnitLabel}
+              </Label>
+              <div className="flex items-center gap-2">
                 <Select
                   value={initialUnit}
                   onValueChange={(val) => {
@@ -376,7 +388,7 @@ export default function ConverterPage() {
                     }
                   }}
                 >
-                  <SelectTrigger className="h-9 w-full bg-muted/40 px-3 text-xs">
+                  <SelectTrigger className="h-9 flex-1 bg-muted/40 px-3 text-xs data-[size=default]:h-9">
                     <SelectValue
                       placeholder={
                         CONVERTER_TEXTS.converter.initialUnitPlaceholder
@@ -391,80 +403,65 @@ export default function ConverterPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
 
-              <NumberStepperField
-                id="initialValue"
-                label={CONVERTER_TEXTS.converter.initialValueLabel(initialUnit)}
-                value={initialValue ?? 0}
-                step={1}
-                error={form.formState.errors.initialValue?.message}
-                onChange={(next) =>
-                  form.setValue("initialValue", next, { shouldValidate: true })
-                }
-              />
-            </div>
-
-            {/* Middle: Swap Button */}
-            <div className="flex justify-center pb-1 md:pb-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleSwapUnits}
-                title={CONVERTER_TEXTS.converter.swapUnitsTooltip}
-                className="size-9 shrink-0 rounded-full"
-              >
-                <ArrowLeftRight className="size-4" />
-                <span className="sr-only">
-                  {CONVERTER_TEXTS.converter.swapUnitsTooltip}
-                </span>
-              </Button>
-            </div>
-
-            {/* Right: Target Unit & Result */}
-            <div className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-normal text-muted-foreground">
-                  {CONVERTER_TEXTS.converter.targetUnitLabel}
-                </Label>
-                <Select
-                  value={targetUnit}
-                  onValueChange={(val) => {
-                    if (val) {
-                      form.setValue("targetUnit", val, { shouldValidate: true })
-                    }
-                  }}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleSwapUnits}
+                  title={CONVERTER_TEXTS.converter.swapUnitsTooltip}
+                  className="size-9 shrink-0 rounded-md bg-muted/40"
                 >
-                  <SelectTrigger className="h-9 w-full bg-muted/40 px-3 text-xs">
-                    <SelectValue
-                      placeholder={
-                        CONVERTER_TEXTS.converter.targetUnitPlaceholder
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableUnits.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex min-h-[58px] items-center justify-between rounded-md border border-input bg-muted/20 px-4 py-2">
-                <MetricCard
-                  label={CONVERTER_TEXTS.converter.convertedValueCardLabel}
-                  value={formattedConvertedValue}
-                  subtext={conversionSubtext}
-                />
-                {calculationMutation.isPending && (
-                  <span className="animate-pulse text-xs text-muted-foreground">
-                    {CONVERTER_TEXTS.converter.calculatingMessage}
+                  <ArrowLeftRight className="size-4" />
+                  <span className="sr-only">
+                    {CONVERTER_TEXTS.converter.swapUnitsTooltip}
                   </span>
-                )}
+                </Button>
               </div>
+            </div>
+
+            {/* 3. To Unit */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-normal text-muted-foreground">
+                {CONVERTER_TEXTS.converter.targetUnitLabel}
+              </Label>
+              <Select
+                value={targetUnit}
+                onValueChange={(val) => {
+                  if (val) {
+                    form.setValue("targetUnit", val, { shouldValidate: true })
+                  }
+                }}
+              >
+                <SelectTrigger className="h-9 w-full bg-muted/40 px-3 text-xs data-[size=default]:h-9">
+                  <SelectValue
+                    placeholder={
+                      CONVERTER_TEXTS.converter.targetUnitPlaceholder
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableUnits.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 4. Converted Value */}
+            <div className="flex min-h-[58px] items-center justify-between rounded-md border border-input bg-muted/20 px-4 py-2">
+              <MetricCard
+                label={CONVERTER_TEXTS.converter.convertedValueCardLabel}
+                value={formattedConvertedValue}
+                subtext={conversionSubtext}
+              />
+              {calculationMutation.isPending && (
+                <span className="animate-pulse text-xs text-muted-foreground">
+                  {CONVERTER_TEXTS.converter.calculatingMessage}
+                </span>
+              )}
             </div>
           </div>
 
