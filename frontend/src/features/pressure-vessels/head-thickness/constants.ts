@@ -15,42 +15,22 @@ export const HEAD_THICKNESS_TEXTS = {
       hemispherical: "Hemispherical",
       conical: "Conical (Planned)",
     },
+    modeLabel: "Calculation Mode",
+    modeOptions: {
+      minThickness: "Solve for Minimum Thickness (t)",
+      mawp: "Solve for Internal Design Pressure (MAWP)",
+    },
   },
 
-  step1: {
-    title: "Step 1: Material & Environmental Conditions",
+  section2: {
+    materialColumnTitle: "Material & Environment",
     materialLabel: "Material Specification (Searchable)",
     materialPlaceholder: "Select material specification...",
     materialSearchPlaceholder: "Search ASME material...",
     materialEmptyText: "No matching material found.",
-    designTempLabel: (unit: string) => `Design Temperature (${unit})`,
+    designTempLabel: (unit: string) => `Design Temperature, T (${unit})`,
 
-    allowableStressTitle: "Allowable Stress (S)",
-    manualOverrideLabel: "Manual Override for Allowable Stress (S)",
-    manualInputLabel: (unit: string) => `Custom Allowable Stress S (${unit})`,
-    allowableStressCardLabel: "Allowable Stress (S) Used",
-  },
-
-  step2: {
-    title: "Step 2: Welding Joint & Efficiency (E)",
-    jointTypeLabel: "Welding Joint Description",
-    rtLabel: "Radiographic Examination (RT)",
-    jointEfficiencyCardLabel: "Joint Efficiency (E)",
-  },
-
-  step3: {
-    title: "Step 3: Calculation Mode & Geometry",
-    modeLabel: "Select Calculation Goal",
-    modeOptions: {
-      minThickness: "Calculate Minimum Thickness (t)",
-      mawp: "Calculate Maximum Allowable Working Pressure (P) (Planned)",
-    },
-    corrosionAllowanceLabel: (unit: string) =>
-      `Corrosion Allowance, CA (${unit})`,
-  },
-
-  step4: {
-    activeLogicPrefix: "Active Logic:",
+    geometryColumnTitle: "Geometry & Target",
     insideDiameterLabel: (unit: string) =>
       `Inside Diameter of Head Skirt, D (${unit})`,
     crownRadiusLabel: (unit: string) => `Inside Crown Radius, L (${unit})`,
@@ -58,30 +38,75 @@ export const HEAD_THICKNESS_TEXTS = {
     insideRadiusLabel: (unit: string) => `Inside Spherical Radius, L (${unit})`,
     internalPressureLabel: (unit: string) =>
       `Internal Design Pressure, P (${unit})`,
-    minThicknessCardLabel: "Minimum Thickness (t)",
-    referencePrefix: "Reference:",
+    nominalThicknessLabel: (unit: string) =>
+      `Nominal Head Thickness, t (${unit})`,
+
+    fabricationColumnTitle: "Fabrication & Corrosion",
+    jointTypeLabel: "Welding Joint Type",
+    rtLabel: "Radiographic Examination (RT)",
+    corrosionAllowanceLabel: (unit: string) =>
+      `Corrosion Allowance, CA (${unit})`,
+  },
+
+  section3: {
+    title: "Allowable Stress (S) Configuration",
+    manualOverrideLabel: "Manual Override for Allowable Stress (S)",
+    autoInterpolatedMessage:
+      "Allowable Stress is automatically interpolated from the database.",
+    manualInputLabel: (unit: string) => `Custom Allowable Stress, S (${unit})`,
+  },
+
+  section4: {
+    title: "Calculation Results",
+    jointEfficiencyCardLabel: "Joint Efficiency (E)",
+    allowableStressCardLabel: "Allowable Stress (S)",
+    minThicknessCardLabel: "Total Minimum Thickness (t)",
+    mawpCardLabel: "Maximum Allowable Working Pressure (MAWP)",
     calculatingMessage: "Updating calculation...",
   },
 
   formulaReference: {
     title:
       "Formula Reference (ASME BPVC Section VIII Div 1 — UG-32 & Appendix 1)",
-    items: [
+    groups: [
       {
-        title: "Ellipsoidal Head (2:1 Standard — UG-32(c))",
-        latex: String.raw`t = \frac{P \cdot D}{2SE - 0.2P} + CA`,
+        groupTitle: "Ellipsoidal Head (UG-32(c) & Appendix 1-4(c))",
+        items: [
+          {
+            title: "Thickness (t) - Ellipsoidal",
+            latex: String.raw`t = \frac{P \cdot D}{2 \cdot S \cdot E - 0.2 \cdot P}\;\text{(2:1)} \;\Big|\; t = \frac{P \cdot D \cdot K}{2 \cdot S \cdot E - 0.2 \cdot P}\;\text{(Custom)}`,
+          },
+          {
+            title: "Pressure (P) - Ellipsoidal",
+            latex: String.raw`P = \frac{2 \cdot S \cdot E \cdot t}{D + 0.2 \cdot t}\;\text{(2:1)} \;\Big|\; P = \frac{2 \cdot S \cdot E \cdot t}{D \cdot K + 0.2 \cdot t},\; K = \frac{1}{6}\left[2 + \left(\frac{D}{2h}\right)^2\right]`,
+          },
+        ],
       },
       {
-        title: "Ellipsoidal Head (Custom Ratio — Appendix 1-4(c))",
-        latex: String.raw`t = \frac{P \cdot D \cdot K}{2SE - 0.2P} + CA, \quad K = \frac{1}{6}\left[2 + \left(\frac{D}{2h}\right)^2\right]`,
+        groupTitle: "Torispherical Head (UG-32(d) & Appendix 1-4(d))",
+        items: [
+          {
+            title: "Thickness (t) - Torispherical",
+            latex: String.raw`t = \frac{P \cdot L \cdot M}{2 \cdot S \cdot E - 0.2 \cdot P},\; M = \frac{1}{4}\left(3 + \sqrt{\frac{L}{r}}\right)`,
+          },
+          {
+            title: "Pressure (P) - Torispherical",
+            latex: String.raw`P = \frac{2 \cdot S \cdot E \cdot t}{L \cdot M + 0.2 \cdot t},\; M = \frac{1}{4}\left(3 + \sqrt{\frac{L}{r}}\right)`,
+          },
+        ],
       },
       {
-        title: "Torispherical Head (Appendix 1-4(d))",
-        latex: String.raw`t = \frac{P \cdot L \cdot M}{2SE - 0.2P} + CA, \quad M = \frac{1}{4}\left(3 + \sqrt{\frac{L}{r}}\right)`,
-      },
-      {
-        title: "Hemispherical Head (UG-32(e) / Appendix 1-3)",
-        latex: String.raw`t = \frac{P \cdot L}{2SE - 0.2P} + CA\;\text{(Thin)} \quad \Big| \quad t = L\left[\left(\frac{2SE + P}{2SE - P}\right)^{1/3} - 1\right] + CA\;\text{(Thick)}`,
+        groupTitle: "Hemispherical Head (UG-32(e) & Appendix 1-3)",
+        items: [
+          {
+            title: "Thickness (t) - Hemispherical",
+            latex: String.raw`t = \frac{P \cdot L}{2 \cdot S \cdot E - 0.2 \cdot P}\;\text{(Thin)} \;\Big|\; t = L \left( \sqrt[3]{\frac{2(S \cdot E + P)}{2 \cdot S \cdot E - P}} - 1 \right)\;\text{(Thick)}`,
+          },
+          {
+            title: "Pressure (P) - Hemispherical",
+            latex: String.raw`P = \frac{2 \cdot S \cdot E \cdot t}{L + 0.2 \cdot t}\;\text{(Thin)} \;\Big|\; P = 2 \cdot S \cdot E \left(\frac{Y - 1}{Y + 2}\right),\; Y = \left(\frac{L + t}{L}\right)^3\;\text{(Thick)}`,
+          },
+        ],
       },
     ],
   },

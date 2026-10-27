@@ -85,6 +85,7 @@ export default function ShellThicknessPage() {
   })
 
   const unitSystem: UnitSystem = watchedValues.unitSystem ?? "metric"
+  const mode: CalculationMode = watchedValues.mode ?? "min_thickness"
   const activeUnits = SHELL_THICKNESS_TEXTS.units[unitSystem]
 
   // Ensure valid initial materialId when materials load from the backend
@@ -101,9 +102,13 @@ export default function ShellThicknessPage() {
 
   // Trigger calculation automatically when debounced form inputs are valid
   const mutateCalculation = calculationMutation.mutate
+  const resetCalculation = calculationMutation.reset
   useEffect(() => {
     const parsed = shellThicknessFormSchema.safeParse(debouncedValues)
-    if (!parsed.success) return
+    if (!parsed.success) {
+      resetCalculation()
+      return
+    }
 
     const v = parsed.data
     const payload: ShellThicknessCalculationRequest = {
@@ -113,7 +118,9 @@ export default function ShellThicknessPage() {
       materialId: v.materialId,
       designTemperature: v.designTemperature,
       insideRadius: v.insideRadius,
-      internalPressure: v.internalPressure,
+      internalPressure:
+        v.mode === "min_thickness" ? v.internalPressure : undefined,
+      thickness: v.mode === "mawp" ? v.thickness : undefined,
       jointTypeId: v.jointTypeId,
       rtId: v.rtId,
       corrosionAllowance: v.corrosionAllowance,
@@ -123,7 +130,7 @@ export default function ShellThicknessPage() {
     }
 
     mutateCalculation(payload)
-  }, [debouncedValues, mutateCalculation])
+  }, [debouncedValues, mutateCalculation, resetCalculation])
 
   const selectedMaterial = useMemo(() => {
     return materialsQuery.data?.find((m) => m.id === watchedValues.materialId)
@@ -154,12 +161,12 @@ export default function ShellThicknessPage() {
       return (
         responseData?.message ??
         calculationMutation.error.message ??
-        "Unable to compute shell thickness."
+        "Unable to compute shell calculation."
       )
     }
     return calculationMutation.error instanceof Error
       ? calculationMutation.error.message
-      : "Unable to compute shell thickness."
+      : "Unable to compute shell calculation."
   }, [calculationMutation.error])
 
   const formattedAllowableStress = result
@@ -173,6 +180,11 @@ export default function ShellThicknessPage() {
   const formattedTotalThickness = result
     ? `${result.totalMinimumThickness.toFixed(4)} ${result.lengthUnit}`
     : `— ${activeUnits.length}`
+
+  const formattedMawp =
+    result?.governingMawp !== undefined && result?.governingMawp !== null
+      ? `${result.governingMawp.toFixed(4)} ${result.pressureUnit}`
+      : `— ${activeUnits.pressure}`
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-12">
@@ -256,10 +268,15 @@ export default function ShellThicknessPage() {
             <RadioGroup
               value={watchedValues.mode}
               onValueChange={(val) => {
-                if (val === "min_thickness") {
+                if (val === "min_thickness" || val === "mawp") {
                   form.setValue("mode", val as CalculationMode, {
                     shouldValidate: true,
                   })
+                  void form.trigger([
+                    "thickness",
+                    "corrosionAllowance",
+                    "internalPressure",
+                  ])
                 }
               }}
               className="flex flex-wrap items-center gap-4 pt-1"
@@ -270,8 +287,8 @@ export default function ShellThicknessPage() {
                   {SHELL_THICKNESS_TEXTS.section1.modeOptions.minThickness}
                 </span>
               </label>
-              <label className="flex cursor-not-allowed items-center gap-2 text-xs text-muted-foreground opacity-60">
-                <RadioGroupItem value="mawp" disabled />
+              <label className="flex cursor-pointer items-center gap-2 text-xs text-foreground">
+                <RadioGroupItem value="mawp" />
                 <span>{SHELL_THICKNESS_TEXTS.section1.modeOptions.mawp}</span>
               </label>
             </RadioGroup>
@@ -392,19 +409,38 @@ export default function ShellThicknessPage() {
             }
           />
 
-          <NumberStepperField
-            id="internalPressure"
-            label={SHELL_THICKNESS_TEXTS.section2.internalPressureLabel(
-              activeUnits.pressure
-            )}
-            value={watchedValues.internalPressure ?? 1}
-            step={0.1}
-            min={0.01}
-            error={form.formState.errors.internalPressure?.message}
-            onChange={(next) =>
-              form.setValue("internalPressure", next, { shouldValidate: true })
-            }
-          />
+          {mode === "mawp" ? (
+            <NumberStepperField
+              id="thickness"
+              label={SHELL_THICKNESS_TEXTS.section2.nominalThicknessLabel(
+                activeUnits.length
+              )}
+              value={watchedValues.thickness ?? 12}
+              step={0.5}
+              min={0.01}
+              error={form.formState.errors.thickness?.message}
+              onChange={(next) => {
+                form.setValue("thickness", next, { shouldValidate: true })
+                void form.trigger("corrosionAllowance")
+              }}
+            />
+          ) : (
+            <NumberStepperField
+              id="internalPressure"
+              label={SHELL_THICKNESS_TEXTS.section2.internalPressureLabel(
+                activeUnits.pressure
+              )}
+              value={watchedValues.internalPressure ?? 1}
+              step={0.1}
+              min={0.01}
+              error={form.formState.errors.internalPressure?.message}
+              onChange={(next) =>
+                form.setValue("internalPressure", next, {
+                  shouldValidate: true,
+                })
+              }
+            />
+          )}
         </div>
 
         {/* Column 3: Fabrication & Corrosion */}
@@ -472,11 +508,12 @@ export default function ShellThicknessPage() {
             step={0.5}
             min={0}
             error={form.formState.errors.corrosionAllowance?.message}
-            onChange={(next) =>
+            onChange={(next) => {
               form.setValue("corrosionAllowance", next, {
                 shouldValidate: true,
               })
-            }
+              void form.trigger("thickness")
+            }}
           />
         </div>
       </section>
@@ -485,55 +522,47 @@ export default function ShellThicknessPage() {
 
       {/* Section 3: Allowable Stress (S) Configuration */}
       <section className="space-y-4">
-        <h3 className="text-base font-semibold text-foreground">
+        <h3 className="text-sm font-semibold text-foreground">
           {SHELL_THICKNESS_TEXTS.section3.title}
         </h3>
 
-        <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
-          <div className="space-y-3">
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-foreground">
-              <Checkbox
-                checked={Boolean(watchedValues.manualOverrideEnabled)}
-                onCheckedChange={(checked) => {
-                  form.setValue("manualOverrideEnabled", Boolean(checked), {
-                    shouldValidate: true,
-                  })
-                }}
-              />
-              <span>{SHELL_THICKNESS_TEXTS.section3.manualOverrideLabel}</span>
-            </label>
-
-            {watchedValues.manualOverrideEnabled ? (
-              <NumberStepperField
-                id="allowableStressOverride"
-                label={SHELL_THICKNESS_TEXTS.section3.manualInputLabel(
-                  activeUnits.pressure
-                )}
-                value={watchedValues.allowableStressOverride ?? 138}
-                step={5}
-                min={0.1}
-                error={form.formState.errors.allowableStressOverride?.message}
-                onChange={(next) =>
-                  form.setValue("allowableStressOverride", next, {
-                    shouldValidate: true,
-                  })
-                }
-              />
-            ) : (
-              <Alert className="border-sky-200 bg-sky-50/80 py-3 text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-200">
-                <AlertDescription className="text-xs text-sky-800 dark:text-sky-200">
-                  {SHELL_THICKNESS_TEXTS.section3.autoInterpolatedMessage}
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-
-          <div className="pt-1">
-            <MetricCard
-              label={SHELL_THICKNESS_TEXTS.section3.metricCardLabel}
-              value={formattedAllowableStress}
+        <div className="max-w-xl space-y-3">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-foreground">
+            <Checkbox
+              checked={Boolean(watchedValues.manualOverrideEnabled)}
+              onCheckedChange={(checked) => {
+                form.setValue("manualOverrideEnabled", Boolean(checked), {
+                  shouldValidate: true,
+                })
+                void form.trigger("allowableStressOverride")
+              }}
             />
-          </div>
+            <span>{SHELL_THICKNESS_TEXTS.section3.manualOverrideLabel}</span>
+          </label>
+
+          {watchedValues.manualOverrideEnabled ? (
+            <NumberStepperField
+              id="allowableStressOverride"
+              label={SHELL_THICKNESS_TEXTS.section3.manualInputLabel(
+                activeUnits.pressure
+              )}
+              value={watchedValues.allowableStressOverride ?? 138}
+              step={5}
+              min={0.1}
+              error={form.formState.errors.allowableStressOverride?.message}
+              onChange={(next) =>
+                form.setValue("allowableStressOverride", next, {
+                  shouldValidate: true,
+                })
+              }
+            />
+          ) : (
+            <Alert className="border-sky-200 bg-sky-50/80 py-3 text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-200">
+              <AlertDescription className="text-xs text-sky-800 dark:text-sky-200">
+                {SHELL_THICKNESS_TEXTS.section3.autoInterpolatedMessage}
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
       </section>
 
@@ -542,7 +571,7 @@ export default function ShellThicknessPage() {
       {/* Section 4: Calculation Results */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-foreground">
+          <h3 className="text-sm font-semibold text-foreground">
             {SHELL_THICKNESS_TEXTS.section4.title}
           </h3>
           {calculationMutation.isPending ? (
@@ -584,10 +613,17 @@ export default function ShellThicknessPage() {
             label={SHELL_THICKNESS_TEXTS.section4.allowableStressCardLabel}
             value={formattedAllowableStress}
           />
-          <MetricCard
-            label={SHELL_THICKNESS_TEXTS.section4.totalThicknessCardLabel}
-            value={formattedTotalThickness}
-          />
+          {mode === "mawp" ? (
+            <MetricCard
+              label={SHELL_THICKNESS_TEXTS.section4.mawpCardLabel}
+              value={formattedMawp}
+            />
+          ) : (
+            <MetricCard
+              label={SHELL_THICKNESS_TEXTS.section4.totalThicknessCardLabel}
+              value={formattedTotalThickness}
+            />
+          )}
         </div>
 
         {result?.breakdown ? (
@@ -603,7 +639,7 @@ export default function ShellThicknessPage() {
 
       {/* Section 5: Formula Reference (ASME BPVC Section VIII Div 1) */}
       <section className="space-y-4">
-        <h3 className="text-base font-semibold text-foreground">
+        <h3 className="text-sm font-semibold text-foreground">
           {SHELL_THICKNESS_TEXTS.section5.title}
         </h3>
 

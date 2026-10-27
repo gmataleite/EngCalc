@@ -17,6 +17,9 @@ export const headThicknessFormSchema = z
     internalPressure: z
       .number()
       .positive("Internal design pressure must be greater than zero."),
+    thickness: z
+      .number()
+      .positive("Nominal head thickness must be greater than zero."),
     insideDiameter: z
       .number()
       .positive("Inside diameter must be greater than zero."),
@@ -49,6 +52,24 @@ export const headThicknessFormSchema = z
       })
     }
 
+    if (
+      values.mode === "mawp" &&
+      values.thickness <= values.corrosionAllowance
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["thickness"],
+        message:
+          "Nominal head thickness (t) must be greater than the corrosion allowance (CA).",
+      })
+      ctx.addIssue({
+        code: "custom",
+        path: ["corrosionAllowance"],
+        message:
+          "Corrosion allowance (CA) must be less than the nominal head thickness (t).",
+      })
+    }
+
     if (values.headType === "torispherical") {
       const ratio = values.knuckleRadius / values.crownRadius
       if (ratio < 0.06 || ratio > 0.5) {
@@ -71,6 +92,7 @@ export const DEFAULT_HEAD_THICKNESS_VALUES: HeadThicknessFormValues = {
   materialId: "SA-516-70",
   designTemperature: 40,
   internalPressure: 1.0,
+  thickness: 12.0,
   insideDiameter: 1200,
   crownRadius: 1200,
   knuckleRadius: 72,

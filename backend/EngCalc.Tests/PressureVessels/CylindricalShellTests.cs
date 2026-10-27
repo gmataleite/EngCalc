@@ -59,6 +59,57 @@ public class CylindricalShellTests
         Assert.Equal(expectedThicknessMillimeters, actualThickness.Millimeters, 3);
     }
 
+    public static IEnumerable<object[]> ValidShellMawpTestData => new List<object[]>
+    {
+        // CENÁRIO 1: Casco Fino (Thin Shell) - Inverso do Cenário 1 de Espessura (UG-27)
+        // t_nom = 17.61988 mm, CA = 3.0 mm => t = 14.61988 mm. D = 2000 mm (R = 1000 mm), S = 138 MPa, E = 1.0.
+        // MAWP esperado = 2.000 MPa.
+        new object[] { 17.61988, 2000.0, 138.0, 3.0, 1.0, 0.0, 2.000 },
+
+        // CENÁRIO 2: Casco Espesso (Thick Shell) - Inverso do Cenário 2 de Espessura (Appendix 1-2)
+        // t_nom = 593.25501 mm, CA = 0.0 mm => t > 0.5*R (593.255 > 500).
+        // MAWP esperado = 60.000 MPa.
+        new object[] { 593.25501, 2000.0, 138.0, 0.0, 1.0, 0.0, 60.000 },
+
+        // CENÁRIO 3: Casco Fino com Pressão de Coluna de Fluido (UG-22)
+        // t_nom = 13.73545 mm, CA = 0.0 mm, E = 0.85, P_fluido = 0.098 MPa.
+        // P_efetivo = 1.598 MPa => MAWP = 1.598 - 0.098 = 1.500 MPa.
+        new object[] { 13.73545, 2000.0, 138.0, 0.0, 0.85, 0.098, 1.500 }
+    };
+
+    [Theory]
+    [MemberData(nameof(ValidShellMawpTestData))]
+    public void CalculateMaximumAllowableWorkingPressure_ValidInputs_ShouldReturnCorrectMawp(
+        double nominalThicknessMillimeters,
+        double internalDiameterMillimeters,
+        double allowableStressMpa,
+        double allowableCorrosionMillimeters,
+        double jointEfficiency,
+        double fluidColumnPressureMpa,
+        double expectedMawpMpa)
+    {
+        // Arrange
+        var nominalThickness = Length.FromMillimeters(nominalThicknessMillimeters);
+        var internalDiameter = Length.FromMillimeters(internalDiameterMillimeters);
+        var allowableStress = Pressure.FromMegapascals(allowableStressMpa);
+        var allowableCorrosion = Length.FromMillimeters(allowableCorrosionMillimeters);
+        var fluidColumnPressure = Pressure.FromMegapascals(fluidColumnPressureMpa);
+
+        var shell = new CylindricalShell(
+            nominalThickness,
+            internalDiameter,
+            allowableStress,
+            allowableCorrosion,
+            jointEfficiency,
+            fluidColumnPressure);
+
+        // Act
+        var actualMawp = shell.CalculateMaximumAllowableWorkingPressure();
+
+        // Assert
+        Assert.Equal(expectedMawpMpa, actualMawp.Megapascals, 3);
+    }
+
     public static IEnumerable<object[]> InvalidShellTestData => new List<object[]>
     {
         // CENÁRIO 1: Pressão Negativa (P < 0)
@@ -112,5 +163,29 @@ public class CylindricalShellTests
         
         Assert.Contains(expectedExceptionMessagePart, exception.Message);
     }
-}
 
+    [Theory]
+    [InlineData(3.0, 3.0)]
+    [InlineData(2.5, 3.0)]
+    public void MawpConstructor_WhenNominalThicknessIsLessThanOrEqualToCorrosionAllowance_ShouldThrowArgumentOutOfRangeException(
+        double nominalThicknessMm,
+        double corrosionAllowanceMm)
+    {
+        // Arrange
+        var nominalThickness = Length.FromMillimeters(nominalThicknessMm);
+        var internalDiameter = Length.FromMillimeters(2000.0);
+        var allowableStress = Pressure.FromMegapascals(138.0);
+        var allowableCorrosion = Length.FromMillimeters(corrosionAllowanceMm);
+        var fluidColumnPressure = Pressure.Zero;
+
+        // Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new CylindricalShell(
+                nominalThickness,
+                internalDiameter,
+                allowableStress,
+                allowableCorrosion,
+                1.0,
+                fluidColumnPressure));
+    }
+}

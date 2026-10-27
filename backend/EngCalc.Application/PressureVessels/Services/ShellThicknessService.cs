@@ -54,14 +54,11 @@ public class ShellThicknessService : IShellThicknessService
             throw new NotSupportedException("Spherical shell calculations are planned on the roadmap and not yet available.");
         }
 
-        if (!string.Equals(request.Mode, "min_thickness", StringComparison.OrdinalIgnoreCase))
+        string mode = (request.Mode ?? "min_thickness").Trim().ToLowerInvariant();
+        bool isMawpMode = mode == "mawp";
+        if (mode != "min_thickness" && !isMawpMode)
         {
-            throw new NotSupportedException("Solve for Internal Design Pressure (MAWP) is planned on the roadmap and not yet available.");
-        }
-
-        if (request.InternalPressure is null || !double.IsFinite(request.InternalPressure.Value) || request.InternalPressure <= 0 || request.InternalPressure > 100_000)
-        {
-            throw new ArgumentOutOfRangeException(nameof(request.InternalPressure), "Internal pressure must be a finite value greater than zero.");
+            throw new NotSupportedException($"Unsupported calculation mode '{request.Mode}'.");
         }
 
         if (!double.IsFinite(request.InsideRadius) || request.InsideRadius <= 0 || request.InsideRadius > 1_000_000)
@@ -82,6 +79,26 @@ public class ShellThicknessService : IShellThicknessService
         if (request.AllowableStressOverride is not null && (!double.IsFinite(request.AllowableStressOverride.Value) || request.AllowableStressOverride.Value > 1_000_000))
         {
             throw new ArgumentOutOfRangeException(nameof(request.AllowableStressOverride), "Allowable stress override must be a finite value within a valid physical range.");
+        }
+
+        if (isMawpMode)
+        {
+            if (request.Thickness is null || !double.IsFinite(request.Thickness.Value) || request.Thickness <= 0 || request.Thickness > 100_000)
+            {
+                throw new ArgumentOutOfRangeException(nameof(request.Thickness), "Nominal shell thickness must be a finite value greater than zero.");
+            }
+
+            if (request.Thickness.Value <= request.CorrosionAllowance)
+            {
+                throw new ArgumentOutOfRangeException(nameof(request.Thickness), "Nominal shell thickness (t) must be strictly greater than the corrosion allowance (CA).");
+            }
+        }
+        else
+        {
+            if (request.InternalPressure is null || !double.IsFinite(request.InternalPressure.Value) || request.InternalPressure <= 0 || request.InternalPressure > 100_000)
+            {
+                throw new ArgumentOutOfRangeException(nameof(request.InternalPressure), "Internal pressure must be a finite value greater than zero.");
+            }
         }
 
         var warnings = new List<string>();
@@ -129,11 +146,7 @@ public class ShellThicknessService : IShellThicknessService
             allowableStress = Pressure.FromMegapascals((double)interpolatedStressMpa.Value);
         }
 
-        // 3. Convert geometric and pressure inputs to Domain UnitsNet types
-        Pressure designPressure = isImperial
-            ? Pressure.FromPoundsForcePerSquareInch(request.InternalPressure.Value)
-            : Pressure.FromMegapascals(request.InternalPressure.Value);
-
+        // 3. Convert geometric inputs to Domain UnitsNet types
         Length insideRadius = isImperial
             ? Length.FromInches(request.InsideRadius)
             : Length.FromMillimeters(request.InsideRadius);
@@ -144,56 +157,125 @@ public class ShellThicknessService : IShellThicknessService
             ? Length.FromInches(request.CorrosionAllowance)
             : Length.FromMillimeters(request.CorrosionAllowance);
 
-        // 4. Execute Domain Calculation
-        var shell = new CylindricalShell(
-            designPressure: designPressure,
-            internalDiameter: internalDiameter,
-            allowableStress: allowableStress,
-            allowableCorrosion: corrosionAllowance,
-            jointEfficiency: jointEfficiency,
-            fluidColumnPressure: Pressure.Zero);
-
-        var (circThickness, longThickness, isCircThick, isLongThick) = shell.CalculateDetailedThicknesses();
-        Length totalMinThickness = shell.CalculateMinimumRequiredThickness();
-
-        if (isCircThick || isLongThick)
-        {
-            warnings.Add("Thick-wall shell threshold exceeded (P > 0.385·S·E or t > 0.5·R). Mandatory Appendix 1-2 (Lamé) equations were applied.");
-        }
-
-        // 5. Convert output values to requested unit system
-        double circVal = isImperial ? circThickness.Inches : circThickness.Millimeters;
-        double longVal = isImperial ? longThickness.Inches : longThickness.Millimeters;
-        double governingVal = Math.Max(circVal, longVal);
-        double caVal = isImperial ? corrosionAllowance.Inches : corrosionAllowance.Millimeters;
-        double totalVal = isImperial ? totalMinThickness.Inches : totalMinThickness.Millimeters;
         double stressVal = isImperial ? allowableStress.PoundsForcePerSquareInch : allowableStress.Megapascals;
+        double caVal = isImperial ? corrosionAllowance.Inches : corrosionAllowance.Millimeters;
 
-        string circFormulaLabel = isCircThick ? "Thick Wall (App. 1-2)" : "Thin Wall (UG-27)";
-        string longFormulaLabel = isLongThick ? "Thick Wall (App. 1-2)" : "Thin Wall (UG-27)";
+        // 4. Execute Domain Calculation by Mode
+        if (isMawpMode)
+        {
+            Length nominalThickness = isImperial
+                ? Length.FromInches(request.Thickness!.Value)
+                : Length.FromMillimeters(request.Thickness!.Value);
 
-        string breakdown = string.Create(
-            CultureInfo.InvariantCulture,
-            $"Breakdown (Cylindrical): Circ. Stress required {circVal:F4} {lengthUnit} ({circFormulaLabel}). Long. Stress required {longVal:F4} {lengthUnit} ({longFormulaLabel}). Max of these + CA yields the final result.");
+            var shell = new CylindricalShell(
+                nominalThickness: nominalThickness,
+                internalDiameter: internalDiameter,
+                allowableStress: allowableStress,
+                allowableCorrosion: corrosionAllowance,
+                jointEfficiency: jointEfficiency,
+                fluidColumnPressure: Pressure.Zero);
 
-        return new ShellThicknessResponseDto(
-            UnitSystem: unitSystem,
-            LengthUnit: lengthUnit,
-            PressureUnit: pressureUnit,
-            TemperatureUnit: temperatureUnit,
-            JointEfficiency: jointEfficiency,
-            JointEfficiencyPercent: Math.Round(jointEfficiency * 100.0, 2),
-            AllowableStress: Math.Round(stressVal, 4),
-            IsManualAllowableStress: isManualOverride,
-            CircumferentialThickness: Math.Round(circVal, 4),
-            LongitudinalThickness: Math.Round(longVal, 4),
-            GoverningRequiredThickness: Math.Round(governingVal, 4),
-            CorrosionAllowance: Math.Round(caVal, 4),
-            TotalMinimumThickness: Math.Round(totalVal, 4),
-            CircumferentialFormulaType: circFormulaLabel,
-            LongitudinalFormulaType: longFormulaLabel,
-            Breakdown: breakdown,
-            Warnings: warnings);
+            var (circMawp, longMawp, isCircThick, isLongThick) = shell.CalculateDetailedMAWP();
+            Pressure governingMawp = shell.CalculateMaximumAllowableWorkingPressure();
+
+            if (isCircThick || isLongThick)
+            {
+                warnings.Add("Thick-wall shell threshold exceeded (P > 0.385·S·E or t > 0.5·R). Mandatory Appendix 1-2 (Lamé) equations were applied.");
+            }
+
+            double circMawpVal = isImperial ? circMawp.PoundsForcePerSquareInch : circMawp.Megapascals;
+            double longMawpVal = isImperial ? longMawp.PoundsForcePerSquareInch : longMawp.Megapascals;
+            double governingMawpVal = isImperial ? governingMawp.PoundsForcePerSquareInch : governingMawp.Megapascals;
+
+            Length corrodedThickness = nominalThickness - corrosionAllowance;
+            double corrodedVal = isImperial ? corrodedThickness.Inches : corrodedThickness.Millimeters;
+            double nomVal = isImperial ? nominalThickness.Inches : nominalThickness.Millimeters;
+
+            string circFormulaLabel = isCircThick ? "Thick Wall (App. 1-2)" : "Thin Wall (UG-27)";
+            string longFormulaLabel = isLongThick ? "Thick Wall (App. 1-2)" : "Thin Wall (UG-27)";
+
+            string breakdown = string.Create(
+                CultureInfo.InvariantCulture,
+                $"Breakdown (Cylindrical MAWP): Corroded thickness {corrodedVal:F4} {lengthUnit} (Nominal {nomVal:F4} - CA {caVal:F4}). Circ. Stress allows {circMawpVal:F4} {pressureUnit} ({circFormulaLabel}). Long. Stress allows {longMawpVal:F4} {pressureUnit} ({longFormulaLabel}). Min of these yields the governing MAWP.");
+
+            return new ShellThicknessResponseDto(
+                UnitSystem: unitSystem,
+                LengthUnit: lengthUnit,
+                PressureUnit: pressureUnit,
+                TemperatureUnit: temperatureUnit,
+                JointEfficiency: jointEfficiency,
+                JointEfficiencyPercent: Math.Round(jointEfficiency * 100.0, 2),
+                AllowableStress: Math.Round(stressVal, 4),
+                IsManualAllowableStress: isManualOverride,
+                CircumferentialThickness: 0,
+                LongitudinalThickness: 0,
+                GoverningRequiredThickness: Math.Round(corrodedVal, 4),
+                CorrosionAllowance: Math.Round(caVal, 4),
+                TotalMinimumThickness: Math.Round(nomVal, 4),
+                CircumferentialFormulaType: circFormulaLabel,
+                LongitudinalFormulaType: longFormulaLabel,
+                Breakdown: breakdown,
+                Warnings: warnings,
+                Mode: "mawp",
+                CircumferentialMawp: Math.Round(circMawpVal, 4),
+                LongitudinalMawp: Math.Round(longMawpVal, 4),
+                GoverningMawp: Math.Round(governingMawpVal, 4),
+                CorrodedThickness: Math.Round(corrodedVal, 4));
+        }
+        else
+        {
+            Pressure designPressure = isImperial
+                ? Pressure.FromPoundsForcePerSquareInch(request.InternalPressure!.Value)
+                : Pressure.FromMegapascals(request.InternalPressure!.Value);
+
+            var shell = new CylindricalShell(
+                designPressure: designPressure,
+                internalDiameter: internalDiameter,
+                allowableStress: allowableStress,
+                allowableCorrosion: corrosionAllowance,
+                jointEfficiency: jointEfficiency,
+                fluidColumnPressure: Pressure.Zero);
+
+            var (circThickness, longThickness, isCircThick, isLongThick) = shell.CalculateDetailedThicknesses();
+            Length totalMinThickness = shell.CalculateMinimumRequiredThickness();
+
+            if (isCircThick || isLongThick)
+            {
+                warnings.Add("Thick-wall shell threshold exceeded (P > 0.385·S·E or t > 0.5·R). Mandatory Appendix 1-2 (Lamé) equations were applied.");
+            }
+
+            double circVal = isImperial ? circThickness.Inches : circThickness.Millimeters;
+            double longVal = isImperial ? longThickness.Inches : longThickness.Millimeters;
+            double governingVal = Math.Max(circVal, longVal);
+            double totalVal = isImperial ? totalMinThickness.Inches : totalMinThickness.Millimeters;
+
+            string circFormulaLabel = isCircThick ? "Thick Wall (App. 1-2)" : "Thin Wall (UG-27)";
+            string longFormulaLabel = isLongThick ? "Thick Wall (App. 1-2)" : "Thin Wall (UG-27)";
+
+            string breakdown = string.Create(
+                CultureInfo.InvariantCulture,
+                $"Breakdown (Cylindrical): Circ. Stress required {circVal:F4} {lengthUnit} ({circFormulaLabel}). Long. Stress required {longVal:F4} {lengthUnit} ({longFormulaLabel}). Max of these + CA yields the final result.");
+
+            return new ShellThicknessResponseDto(
+                UnitSystem: unitSystem,
+                LengthUnit: lengthUnit,
+                PressureUnit: pressureUnit,
+                TemperatureUnit: temperatureUnit,
+                JointEfficiency: jointEfficiency,
+                JointEfficiencyPercent: Math.Round(jointEfficiency * 100.0, 2),
+                AllowableStress: Math.Round(stressVal, 4),
+                IsManualAllowableStress: isManualOverride,
+                CircumferentialThickness: Math.Round(circVal, 4),
+                LongitudinalThickness: Math.Round(longVal, 4),
+                GoverningRequiredThickness: Math.Round(governingVal, 4),
+                CorrosionAllowance: Math.Round(caVal, 4),
+                TotalMinimumThickness: Math.Round(totalVal, 4),
+                CircumferentialFormulaType: circFormulaLabel,
+                LongitudinalFormulaType: longFormulaLabel,
+                Breakdown: breakdown,
+                Warnings: warnings,
+                Mode: "min_thickness");
+        }
     }
 
     private static (double Efficiency, string? Warning) ResolveJointEfficiency(string jointTypeId, string rtId)

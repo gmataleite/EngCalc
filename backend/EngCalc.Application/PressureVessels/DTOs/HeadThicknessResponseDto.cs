@@ -16,6 +16,8 @@ public record HeadThicknessResponseDto(
     double TotalMinimumThickness,
     string ReferenceLatex,
     string Breakdown,
-    IReadOnlyList<string> Warnings
+    IReadOnlyList<string> Warnings,
+    string Mode = "min_thickness",
+    double? CorrodedThickness = null,
+    double? MaximumAllowableWorkingPressure = null
 );
-

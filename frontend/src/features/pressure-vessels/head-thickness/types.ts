@@ -16,7 +16,8 @@ export interface HeadThicknessCalculationRequest {
   mode: CalculationMode
   materialId: string
   designTemperature: number
-  internalPressure: number
+  internalPressure?: number
+  thickness?: number
   insideDiameter?: number
   headHeight?: number
   crownRadius?: number
@@ -45,4 +46,7 @@ export interface HeadThicknessCalculationResponse {
   referenceLatex: string
   breakdown: string
   warnings: string[]
+  mode?: CalculationMode
+  corrodedThickness?: number
+  maximumAllowableWorkingPressure?: number
 }

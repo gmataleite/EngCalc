@@ -17,6 +17,10 @@ public record ShellThicknessResponseDto(
     string CircumferentialFormulaType,
     string LongitudinalFormulaType,
     string Breakdown,
-    IReadOnlyList<string> Warnings
+    IReadOnlyList<string> Warnings,
+    string Mode = "min_thickness",
+    double? CircumferentialMawp = null,
+    double? LongitudinalMawp = null,
+    double? GoverningMawp = null,
+    double? CorrodedThickness = null
 );
-

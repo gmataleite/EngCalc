@@ -15,6 +15,9 @@ export const shellThicknessFormSchema = z
     internalPressure: z
       .number()
       .positive("Internal pressure must be greater than zero."),
+    thickness: z
+      .number()
+      .positive("Nominal shell thickness must be greater than zero."),
     jointTypeId: z.string().min(1, "Welding joint type is required."),
     rtId: z.string().min(1, "Radiographic examination is required."),
     corrosionAllowance: z
@@ -36,6 +39,24 @@ export const shellThicknessFormSchema = z
         message: "Manual allowable stress must be greater than zero.",
       })
     }
+
+    if (
+      values.mode === "mawp" &&
+      values.thickness <= values.corrosionAllowance
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["thickness"],
+        message:
+          "Nominal shell thickness (t) must be greater than the corrosion allowance (CA).",
+      })
+      ctx.addIssue({
+        code: "custom",
+        path: ["corrosionAllowance"],
+        message:
+          "Corrosion allowance (CA) must be less than the nominal shell thickness (t).",
+      })
+    }
   })
 
 export type ShellThicknessFormValues = z.infer<typeof shellThicknessFormSchema>
@@ -48,6 +69,7 @@ export const DEFAULT_SHELL_THICKNESS_VALUES: ShellThicknessFormValues = {
   designTemperature: 40,
   insideRadius: 600,
   internalPressure: 1.0,
+  thickness: 12.0,
   jointTypeId: "type_1",
   rtId: "full",
   corrosionAllowance: 3.0,

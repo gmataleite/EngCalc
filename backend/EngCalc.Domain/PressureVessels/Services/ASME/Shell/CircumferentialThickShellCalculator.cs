@@ -22,4 +22,14 @@ internal class CircumferentialThickShellCalculator : ShellCalculatorBase // ASME
 
         return Length.FromMillimeters(thickness);
     }
+
+    public override Pressure CalculateMAWP(Length corrodedThickness, Length internalRadius, Pressure allowableStress, double jointEfficiency)
+    {
+        var (t, R, S, E) = GetMawpConstants(corrodedThickness, internalRadius, allowableStress, jointEfficiency);
+
+        double Z = Math.Pow((R + t) / R, 2.0);
+        double pressure = S * E * ((Z - 1.0) / (Z + 1.0));
+
+        return Pressure.FromMegapascals(pressure);
+    }
 }

@@ -42,4 +42,9 @@ export interface ShellThicknessCalculationResponse {
   longitudinalFormulaType: string
   breakdown: string
   warnings: string[]
+  mode?: CalculationMode
+  circumferentialMawp?: number
+  longitudinalMawp?: number
+  governingMawp?: number
+  corrodedThickness?: number
 }
