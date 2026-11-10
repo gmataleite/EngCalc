@@ -10,6 +10,7 @@ public class CylindricalTankVolume : IGeometryVolume
     public double HeadVolume { get;  private set; }
     public double BottomVolume { get;  private set; }
     public double InternalVolume { get; private set; }
+    public double ProductVolume { get; private set; }
 
     public CylindricalTankVolume(double bodyVolume, double headVolume, double bottomVolume)
     {
@@ -28,22 +29,52 @@ public class CylindricalTankVolume : IGeometryVolume
         HeadTanksTypes headType, 
         double? headHeight, 
         double? headAngle)
+        : this(
+            internalDiameter,
+            internalBodyHeight,
+            bottomType,
+            bottomHeight,
+            bottomAngle,
+            headType,
+            headHeight,
+            headAngle,
+            null)
+    {
+    }
+
+    public CylindricalTankVolume(
+        double internalDiameter, 
+        double internalBodyHeight, 
+        HeadTanksTypes bottomType, 
+        double? bottomHeight, 
+        double? bottomAngle, 
+        HeadTanksTypes headType, 
+        double? headHeight, 
+        double? headAngle,
+        double? productHeight)
     {
         Guard.AgainstNegativeOrZero(internalDiameter, nameof(internalDiameter));
         Guard.AgainstNegativeOrZero(internalBodyHeight, nameof(internalBodyHeight));
-        
+
+
         BodyVolume = new CylindricalBodyVolume(internalDiameter, internalBodyHeight).InternalVolume;
 
-        HeadVolume = CalculateHeadOrBottomVolume(headType, internalDiameter, headHeight, headAngle);
-        BottomVolume = CalculateHeadOrBottomVolume(bottomType, internalDiameter, bottomHeight, bottomAngle);
+        HeadVolume = CalculateHeadVolume(headType, internalDiameter, headHeight, headAngle);
+        BottomVolume = CalculateBottomVolume(bottomType, internalDiameter, bottomHeight, bottomAngle);
+        InternalVolume = CalculateInternalVolume();
 
-    }
-    public double CalculateInternalVolume()
-    {
-        return BodyVolume + HeadVolume + BottomVolume;
+        if (productHeight.HasValue){
+            Guard.AgainstNegativeOrZero(productHeight.Value, nameof(productHeight));
+            ProductVolume = CalculateProductVolume(
+            internalDiameter, 
+            productHeight.Value, 
+            bottomType, 
+            bottomHeight, 
+            bottomAngle);
+        }
     }
 
-    public double CalculateHeadOrBottomVolume(HeadTanksTypes type, double internalDiameter, double? height, double? angle)
+    public static double CalculateHeadVolume(HeadTanksTypes type, double internalDiameter, double? height, double? angle)
     {
         if (type == HeadTanksTypes.Conical)
         {
@@ -62,4 +93,23 @@ public class CylindricalTankVolume : IGeometryVolume
             throw new ArgumentException("Invalid head or bottom type.");
         }
     }
+
+    public static double CalculateBottomVolume(HeadTanksTypes type, double internalDiameter, double? height, double? angle) => CalculateHeadVolume(type, internalDiameter, height, angle);
+
+    public double CalculateInternalVolume() => BodyVolume + HeadVolume + BottomVolume;
+
+    public static double CalculateProductVolume(
+        double internalDiameter,
+        double productHeight, 
+        HeadTanksTypes bottomType, 
+        double? bottomHeight, 
+        double? bottomAngle) => new CylindricalTankVolume(
+        internalDiameter: internalDiameter,
+        internalBodyHeight: productHeight,
+        bottomType: bottomType,
+        bottomHeight: bottomHeight,
+        bottomAngle: bottomAngle,
+        headType: HeadTanksTypes.Flat,
+        headHeight: 0,
+        headAngle: 0).CalculateInternalVolume();
 }

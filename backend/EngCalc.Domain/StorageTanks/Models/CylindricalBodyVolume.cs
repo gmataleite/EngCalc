@@ -12,8 +12,8 @@ public class CylindricalBodyVolume : IGeometryVolume
 
     public CylindricalBodyVolume(double internalDiameter, double internalHeight)
     {
-        Guard.AgainstNegativeOrZero(InternalDiameter, nameof(InternalDiameter));
-        Guard.AgainstNegativeOrZero(InternalHeight, nameof(InternalHeight));
+        Guard.AgainstNegativeOrZero(internalDiameter, nameof(internalDiameter));
+        Guard.AgainstNegativeOrZero(internalHeight, nameof(internalHeight));
         
         InternalDiameter = internalDiameter;
         InternalHeight = internalHeight;
