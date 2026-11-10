@@ -23,6 +23,12 @@ public static class Guard
             throw new ArgumentOutOfRangeException(parameterName, $"O valor de {parameterName} deve ser estritamente maior que zero.");
     }
 
+    public static void AgainstNegative(double value, string parameterName)
+    {
+        if (value < 0)
+            throw new ArgumentOutOfRangeException(parameterName, $"O valor de {parameterName} não pode ser negativo.");
+    }
+
     public static void AgainstNegative(Pressure value, string parameterName)
     {
         if (value < Pressure.Zero)

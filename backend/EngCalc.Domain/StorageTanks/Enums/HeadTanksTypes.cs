@@ -4,6 +4,9 @@ public enum HeadTanksTypes
 {
     Flat,
     Conical,
-    Spherical
+    Hemispherical,
+    Spherical = Hemispherical,
+    Ellipsoidal,
+    Torispherical
 }
 

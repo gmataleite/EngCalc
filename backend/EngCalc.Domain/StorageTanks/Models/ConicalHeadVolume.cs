@@ -1,16 +1,17 @@
 namespace EngCalc.Domain.StorageTanks.Models;
 
+using System;
 using EngCalc.Domain.Common;
 using EngCalc.Domain.StorageTanks.Interfaces;
 
-public class ConicalHeadVolume : IGeometryVolume
+public class ConicalHeadVolume : IHeadVolume
 {
-    public double InternalDiameter { get;  private set; }
-    public double InternalHeight { get;  private set; }
+    public double InternalDiameter { get; private set; }
+    public double InternalHeight { get; private set; }
     public double? AngleToHorizontal { get; private set; }
-    public double InternalRadius { get { return InternalDiameter / 2; } }
+    public double InternalRadius => InternalDiameter / 2.0;
     public double InternalVolume { get; private set; }
-    
+    public double HeadHeight => InternalHeight;
 
     public ConicalHeadVolume(double internalDiameter, double? angleToHorizontal, double? internalHeight)
     {
@@ -36,8 +37,17 @@ public class ConicalHeadVolume : IGeometryVolume
         AngleToHorizontal = angleToHorizontal;
         InternalVolume = CalculateInternalVolume();
     }
+
     public double CalculateInternalVolume()
     {
-        return Math.PI * Math.Pow(InternalRadius, 2) * InternalHeight / 3;
+        return Math.PI * Math.Pow(InternalRadius, 2) * InternalHeight / 3.0;
+    }
+
+    public double CalculateVerticalProductVolume(double heightFromBase)
+    {
+        if (heightFromBase <= 0) return 0.0;
+        if (heightFromBase >= InternalHeight) return InternalVolume;
+
+        return InternalVolume * (1.0 - Math.Pow(1.0 - (heightFromBase / InternalHeight), 3.0));
     }
 }

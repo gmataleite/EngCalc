@@ -67,7 +67,9 @@ public class CylindricalTankVolumeTests
 
     [Theory]
     [InlineData(HeadTanksTypes.Flat, null, null, 0)]
-    [InlineData(HeadTanksTypes.Spherical, null, null, Math.PI * 125 * 2 / 3)]
+    [InlineData(HeadTanksTypes.Hemispherical, null, null, Math.PI * 125 * 2 / 3)]
+    [InlineData(HeadTanksTypes.Ellipsoidal, null, null, Math.PI * 100 * 2.5 / 6)]
+    [InlineData(HeadTanksTypes.Torispherical, null, null, 0.0847 * 1000)]
     [InlineData(HeadTanksTypes.Conical, 5d, null, Math.PI * 25 * 5 / 3)]
     public void CalculateHeadVolume_ShouldReturnExpectedVolume(
         HeadTanksTypes type,
@@ -78,6 +80,13 @@ public class CylindricalTankVolumeTests
         var result = CylindricalTankVolume.CalculateHeadVolume(type, 10, height, angle);
 
         Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void CalculateHeadVolume_ShouldSupportSphericalAlias()
+    {
+        var result = CylindricalTankVolume.CalculateHeadVolume(HeadTanksTypes.Spherical, 10, null, null);
+        Assert.Equal(Math.PI * 125 * 2 / 3, result);
     }
 
     [Fact]
@@ -93,7 +102,9 @@ public class CylindricalTankVolumeTests
 
     [Theory]
     [InlineData(HeadTanksTypes.Flat, 0)]
-    [InlineData(HeadTanksTypes.Spherical, Math.PI * 125 * 2 / 3)]
+    [InlineData(HeadTanksTypes.Hemispherical, Math.PI * 125 * 2 / 3)]
+    [InlineData(HeadTanksTypes.Ellipsoidal, Math.PI * 100 * 2.5 / 6)]
+    [InlineData(HeadTanksTypes.Torispherical, 0.0847 * 1000)]
     [InlineData(HeadTanksTypes.Conical, Math.PI * 25 * 5 / 3)]
     public void CalculateBottomVolume_ShouldReturnExpectedVolume(
         HeadTanksTypes type,
@@ -170,6 +181,69 @@ public class CylindricalTankVolumeTests
                 productHeight));
 
         Assert.Equal("productHeight", exception.ParamName);
+    }
+
+    [Fact]
+    public void ProductConstructor_WhenLiquidExceedsBodyHeight_ShouldFillIntoTopHeadAndFlagExceedsWeldSeamLine()
+    {
+        // Tank with diameter 10 (R=5), body height 20, hemispherical top head (head height 5). Total height = 25.
+        var tank = new CylindricalTankVolume(
+            internalDiameter: 10,
+            internalBodyHeight: 20,
+            bottomType: HeadTanksTypes.Flat,
+            bottomHeight: null,
+            bottomAngle: null,
+            headType: HeadTanksTypes.Hemispherical,
+            headHeight: null,
+            headAngle: null,
+            productHeight: 22);
+
+        Assert.True(tank.ExceedsWeldSeamLine);
+        Assert.Equal(25, tank.TotalTankHeight);
+
+        // Expected: bottom (0) + full body (pi * 25 * 20) + partial head at z=2: pi * 2 * (25 - 4/3)
+        double expectedBody = Math.PI * 25 * 20;
+        double expectedHeadPartial = Math.PI * 2 * (25 - 4.0 / 3.0);
+        Assert.Equal(expectedBody + expectedHeadPartial, tank.ProductVolume, 1e-9);
+    }
+
+    [Fact]
+    public void ProductConstructor_WhenLiquidFillsToTop_ShouldEqualInternalVolume()
+    {
+        // Total tank height = 20 + 5 = 25
+        var tank = new CylindricalTankVolume(
+            internalDiameter: 10,
+            internalBodyHeight: 20,
+            bottomType: HeadTanksTypes.Flat,
+            bottomHeight: null,
+            bottomAngle: null,
+            headType: HeadTanksTypes.Hemispherical,
+            headHeight: null,
+            headAngle: null,
+            productHeight: 25);
+
+        Assert.True(tank.ExceedsWeldSeamLine);
+        Assert.Equal(tank.InternalVolume, tank.ProductVolume, 1e-9);
+    }
+
+    [Fact]
+    public void ProductConstructor_ShouldThrow_WhenProductHeightExceedsTotalTankHeight()
+    {
+        // Total tank height = 20 + 5 = 25. Passing 25.1 must throw.
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new CylindricalTankVolume(
+                internalDiameter: 10,
+                internalBodyHeight: 20,
+                bottomType: HeadTanksTypes.Flat,
+                bottomHeight: null,
+                bottomAngle: null,
+                headType: HeadTanksTypes.Hemispherical,
+                headHeight: null,
+                headAngle: null,
+                productHeight: 25.1));
+
+        Assert.Equal("productHeight", exception.ParamName);
+        Assert.Contains("total tank height", exception.Message);
     }
 
     [Fact]
