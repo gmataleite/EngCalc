@@ -498,13 +498,23 @@ export default function ConverterPage() {
           {currentFormulaReference.items.map((item) => {
             const isActive = item.from === initialUnit && item.to === targetUnit
             return (
-              <div
+              <button
+                type="button"
                 key={item.title}
+                aria-pressed={isActive}
+                onClick={() => {
+                  form.setValue("initialUnit", item.from, {
+                    shouldValidate: true,
+                  })
+                  form.setValue("targetUnit", item.to, {
+                    shouldValidate: true,
+                  })
+                }}
                 className={cn(
-                  "space-y-2 rounded-lg p-4 transition-colors",
+                  "w-full space-y-2 rounded-lg border p-4 text-left transition-colors",
                   isActive
                     ? "border-primary/50 bg-primary/5 shadow-xs"
-                    : "bg-card/50"
+                    : "border-transparent bg-card/50 hover:border-border hover:bg-muted/30"
                 )}
               >
                 <div className="flex items-center justify-between">
@@ -525,7 +535,7 @@ export default function ConverterPage() {
                 <div className="rounded-md bg-muted/20 p-3">
                   <Latex formula={item.latex} displayMode />
                 </div>
-              </div>
+              </button>
             )
           })}
         </div>

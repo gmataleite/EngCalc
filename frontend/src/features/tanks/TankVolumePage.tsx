@@ -115,9 +115,16 @@ export default function TankVolumePage() {
 
   const headOptions = useMemo(() => {
     const options = optionsQuery.data?.tankHeadTypes
-    return (options?.length ? options : DEFAULT_TANK_OPTIONS.headTypes).map(
-      (option) => ({ ...option, id: option.id.toLowerCase() })
-    )
+    const seenLabels = new Set<string>()
+
+    return (options?.length ? options : DEFAULT_TANK_OPTIONS.headTypes)
+      .map((option) => ({ ...option, id: option.id.toLowerCase() }))
+      .filter((option) => {
+        const label = option.label.trim().toLowerCase()
+        if (seenLabels.has(label)) return false
+        seenLabels.add(label)
+        return true
+      })
   }, [optionsQuery.data])
 
   const orientationOptions = useMemo(() => {
