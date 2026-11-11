@@ -5,7 +5,7 @@ using EngCalc.Application.StorageTanks.Interfaces;
 namespace EngCalc.API.Controllers.StorageTanks;
 
 [ApiController]
-[Route("api/calculations/storage-tanks/")]
+[Route("api/tanks/")]
 public class StorageTankController : ControllerBase
 {
     private readonly ITankVolumeService _storageTankVolumeService;

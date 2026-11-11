@@ -10,6 +10,8 @@ using EngCalc.Application.Materials.Interfaces;
 using EngCalc.Application.Materials.Services;
 using EngCalc.Application.PressureVessels.Interfaces;
 using EngCalc.Application.PressureVessels.Services;
+using EngCalc.Application.StorageTanks.Interfaces;
+using EngCalc.Application.StorageTanks.Services;
 using EngCalc.Infrastructure.Data;
 using EngCalc.Infrastructure.Repositories;
 
@@ -55,6 +57,7 @@ void ConfigureDependencies(IServiceCollection services)
     services.AddScoped<IShellThicknessService, ShellThicknessService>();
     services.AddScoped<IHeadThicknessService, HeadThicknessService>();
     services.AddScoped<IConverterService, ConverterService>();
+    services.AddScoped<ITankVolumeService, TankVolumeService>();
 }
 
 void ConfigureApi(WebApplicationBuilder builder)

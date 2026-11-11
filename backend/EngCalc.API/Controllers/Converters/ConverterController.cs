@@ -5,7 +5,7 @@ using EngCalc.Application.Converters.Interfaces;
 namespace EngCalc.API.Controllers.Converters;
 
 [ApiController]
-[Route("api/calculations/converters/")]
+[Route("api/converters/")]
 public class ConverterController : ControllerBase
 {
     private readonly IConverterService _converterService;
