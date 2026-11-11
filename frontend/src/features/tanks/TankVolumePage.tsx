@@ -181,8 +181,8 @@ export default function TankVolumePage() {
         </p>
       </section>
 
-      <Card>
-        <CardHeader>
+      <Card className="rounded-none bg-transparent py-0 ring-0">
+        <CardHeader className="px-0">
           <CardTitle className="text-base font-semibold">
             {TANK_VOLUME_TEXTS.configuration.title}
           </CardTitle>
@@ -190,7 +190,7 @@ export default function TankVolumePage() {
             {TANK_VOLUME_TEXTS.configuration.description}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 px-0">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <NumberStepperField
               id="internalDiameter"
@@ -318,21 +318,25 @@ export default function TankVolumePage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
+      <Card className="rounded-none bg-transparent py-0 ring-0">
+        <CardHeader className="px-0">
           <CardTitle className="text-base font-semibold">
             {TANK_VOLUME_TEXTS.results.title}
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <MetricCard
-            label={TANK_VOLUME_TEXTS.results.internalVolume}
-            value={formatVolume(result?.internalVolume)}
-          />
-          <MetricCard
-            label={TANK_VOLUME_TEXTS.results.productVolume}
-            value={formatVolume(result?.productVolume)}
-          />
+        <CardContent className="px-0">
+          <div className="rounded-md border border-input bg-muted/20 px-4 py-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <MetricCard
+                label={TANK_VOLUME_TEXTS.results.internalVolume}
+                value={formatVolume(result?.internalVolume)}
+              />
+              <MetricCard
+                label={TANK_VOLUME_TEXTS.results.productVolume}
+                value={formatVolume(result?.productVolume)}
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -344,7 +348,7 @@ export default function TankVolumePage() {
         </h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {TANK_VOLUME_TEXTS.formulaReference.items.map((item) => (
-            <div key={item.title} className="space-y-2 rounded-lg border p-4">
+            <div key={item.title} className="space-y-2 rounded-lg">
               <h4 className="text-xs font-semibold text-foreground">
                 {item.title}
               </h4>
@@ -399,7 +403,7 @@ function TankHeadSection({
   const usesHeight = dimensionMode === "height"
 
   return (
-    <div className="space-y-4 rounded-lg border p-4">
+    <div className="space-y-4 rounded-lg">
       <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       <div className="space-y-1.5">
         <Label className="text-xs font-normal text-muted-foreground">

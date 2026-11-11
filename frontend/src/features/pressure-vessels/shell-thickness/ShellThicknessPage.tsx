@@ -604,26 +604,28 @@ export default function ShellThicknessPage() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <MetricCard
-            label={SHELL_THICKNESS_TEXTS.section4.jointEfficiencyCardLabel}
-            value={formattedJointEfficiency}
-          />
-          <MetricCard
-            label={SHELL_THICKNESS_TEXTS.section4.allowableStressCardLabel}
-            value={formattedAllowableStress}
-          />
-          {mode === "mawp" ? (
+        <div className="rounded-md border border-input bg-muted/20 px-4 py-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
             <MetricCard
-              label={SHELL_THICKNESS_TEXTS.section4.mawpCardLabel}
-              value={formattedMawp}
+              label={SHELL_THICKNESS_TEXTS.section4.jointEfficiencyCardLabel}
+              value={formattedJointEfficiency}
             />
-          ) : (
             <MetricCard
-              label={SHELL_THICKNESS_TEXTS.section4.totalThicknessCardLabel}
-              value={formattedTotalThickness}
+              label={SHELL_THICKNESS_TEXTS.section4.allowableStressCardLabel}
+              value={formattedAllowableStress}
             />
-          )}
+            {mode === "mawp" ? (
+              <MetricCard
+                label={SHELL_THICKNESS_TEXTS.section4.mawpCardLabel}
+                value={formattedMawp}
+              />
+            ) : (
+              <MetricCard
+                label={SHELL_THICKNESS_TEXTS.section4.totalThicknessCardLabel}
+                value={formattedTotalThickness}
+              />
+            )}
+          </div>
         </div>
 
         {result?.breakdown ? (

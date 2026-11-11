@@ -348,8 +348,8 @@ export default function ConverterPage() {
       <Separator />
 
       {/* Main Conversion Card */}
-      <Card>
-        <CardHeader>
+      <Card className="rounded-none bg-transparent py-0 ring-0">
+        <CardHeader className="px-0">
           <CardTitle className="text-base font-semibold">
             {CONVERTER_TEXTS.converter.cardTitle}
           </CardTitle>
@@ -357,7 +357,7 @@ export default function ConverterPage() {
             {CONVERTER_TEXTS.converter.cardDescription}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 px-0">
           {/* Stepper, Unit Selection & Result Stack */}
           <div className="space-y-4">
             {/* 1. Initial Value */}
@@ -501,10 +501,10 @@ export default function ConverterPage() {
               <div
                 key={item.title}
                 className={cn(
-                  "space-y-2 rounded-lg border p-4 transition-colors",
+                  "space-y-2 rounded-lg p-4 transition-colors",
                   isActive
                     ? "border-primary/50 bg-primary/5 shadow-xs"
-                    : "border-border bg-card/50"
+                    : "bg-card/50"
                 )}
               >
                 <div className="flex items-center justify-between">
