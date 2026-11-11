@@ -682,26 +682,28 @@ export default function HeadThicknessPage() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <MetricCard
-            label={HEAD_THICKNESS_TEXTS.section4.jointEfficiencyCardLabel}
-            value={formattedJointEfficiency}
-          />
-          <MetricCard
-            label={HEAD_THICKNESS_TEXTS.section4.allowableStressCardLabel}
-            value={formattedAllowableStress}
-          />
-          {mode === "mawp" ? (
+        <div className="rounded-md border border-input bg-muted/20 px-4 py-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
             <MetricCard
-              label={HEAD_THICKNESS_TEXTS.section4.mawpCardLabel}
-              value={formattedMawp}
+              label={HEAD_THICKNESS_TEXTS.section4.jointEfficiencyCardLabel}
+              value={formattedJointEfficiency}
             />
-          ) : (
             <MetricCard
-              label={HEAD_THICKNESS_TEXTS.section4.minThicknessCardLabel}
-              value={formattedTotalThickness}
+              label={HEAD_THICKNESS_TEXTS.section4.allowableStressCardLabel}
+              value={formattedAllowableStress}
             />
-          )}
+            {mode === "mawp" ? (
+              <MetricCard
+                label={HEAD_THICKNESS_TEXTS.section4.mawpCardLabel}
+                value={formattedMawp}
+              />
+            ) : (
+              <MetricCard
+                label={HEAD_THICKNESS_TEXTS.section4.minThicknessCardLabel}
+                value={formattedTotalThickness}
+              />
+            )}
+          </div>
         </div>
 
         {result?.breakdown ? (

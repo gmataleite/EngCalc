@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom"
 import {
-  ArrowRight,
   ArrowLeftRight,
   Building2,
   Calculator,
   Cog,
+  Cylinder,
 } from "lucide-react"
 import {
   Card,
@@ -32,55 +32,58 @@ export default function HomePage() {
           Pressure Vessels (ASME BPVC Section VIII Div. 1)
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Calculator className="size-4 text-primary" />
-                <CardTitle>Shell Thickness (UG-27)</CardTitle>
-              </div>
-              <CardDescription>
-                Minimum required thickness of cylindrical shells under internal
-                pressure per ASME Section VIII Div. 1, UG-27 and Mandatory
-                Appendix 1-2.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                nativeButton={false}
-                render={<Link to="/pressure-vessels/shell-thickness" />}
-                variant="default"
-                className="w-full justify-between"
-              >
-                <span>Open Calculator</span>
-                <ArrowRight className="size-4" />
-              </Button>
-            </CardContent>
-          </Card>
+          <Link to="/pressure-vessels/shell-thickness" className="block">
+            <Card className="h-full transition-colors hover:bg-muted/30">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Calculator className="size-4 text-primary" />
+                  <CardTitle>Shell Thickness (UG-27)</CardTitle>
+                </div>
+                <CardDescription>
+                  Minimum required thickness of cylindrical shells under
+                  internal pressure per ASME Section VIII Div. 1, UG-27 and
+                  Mandatory Appendix 1-2.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Calculator className="size-4 text-primary" />
-                <CardTitle>Formed Heads (UG-32)</CardTitle>
-              </div>
-              <CardDescription>
-                Minimum required thickness of ellipsoidal, torispherical, and
-                hemispherical heads under internal pressure per ASME Section
-                VIII Div. 1, UG-32.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                nativeButton={false}
-                render={<Link to="/pressure-vessels/head-thickness" />}
-                variant="default"
-                className="w-full justify-between"
-              >
-                <span>Open Calculator</span>
-                <ArrowRight className="size-4" />
-              </Button>
-            </CardContent>
-          </Card>
+          <Link to="/pressure-vessels/head-thickness" className="block">
+            <Card className="h-full transition-colors hover:bg-muted/30">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Calculator className="size-4 text-primary" />
+                  <CardTitle>Formed Heads (UG-32)</CardTitle>
+                </div>
+                <CardDescription>
+                  Minimum required thickness of ellipsoidal, torispherical, and
+                  hemispherical heads under internal pressure per ASME Section
+                  VIII Div. 1, UG-32.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+        </div>
+      </section>
+
+      {/* Storage Tanks module */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold tracking-tight">Storage Tanks</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Link to="/tanks/volume" className="block">
+            <Card className="h-full transition-colors hover:bg-muted/30">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Cylinder className="size-4 text-primary" />
+                  <CardTitle>Tank Volume</CardTitle>
+                </div>
+                <CardDescription>
+                  Calculate the internal and product volume of vertical and
+                  horizontal cylindrical storage tanks.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
         </div>
       </section>
 
@@ -88,29 +91,21 @@ export default function HomePage() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold tracking-tight">Unit Converter</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <ArrowLeftRight className="size-4 text-primary" />
-                <CardTitle>General Unit Converter</CardTitle>
-              </div>
-              <CardDescription>
-                Dimensional conversion utilities across Metric (SI) and Imperial
-                engineering units (pressure, stress, torque, length, thermal).
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                nativeButton={false}
-                render={<Link to="/converters" />}
-                variant="default"
-                className="w-full justify-between"
-              >
-                <span>Open Calculator</span>
-                <ArrowRight className="size-4" />
-              </Button>
-            </CardContent>
-          </Card>
+          <Link to="/converters" className="block">
+            <Card className="h-full transition-colors hover:bg-muted/30">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <ArrowLeftRight className="size-4 text-primary" />
+                  <CardTitle>General Unit Converter</CardTitle>
+                </div>
+                <CardDescription>
+                  Dimensional conversion utilities across Metric (SI) and
+                  Imperial engineering units (pressure, stress, torque, length,
+                  thermal).
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
         </div>
       </section>
 

@@ -12,7 +12,7 @@ namespace EngCalc.Tests.Converters.API;
 
 public class ConverterControllerTests : IClassFixture<WebApplicationFactory<Program>>
 {
-    private const string EndpointUrl = "api/calculations/converters/";
+    private const string EndpointUrl = "api/converters/";
     private readonly WebApplicationFactory<Program> _factory;
     private readonly Mock<IConverterService> _mockConverterService;
 

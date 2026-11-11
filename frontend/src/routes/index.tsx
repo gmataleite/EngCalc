@@ -5,6 +5,7 @@ import NotFoundPage from "@/pages/NotFoundPage"
 import ShellThicknessPage from "@/pages/pressure-vessels/ShellThicknessPage"
 import HeadThicknessPage from "@/pages/pressure-vessels/HeadThicknessPage"
 import ConverterPage from "@/pages/converters/ConverterPage"
+import TankVolumePage from "@/pages/tanks/TankVolumePage"
 
 export const router = createBrowserRouter([
   {
@@ -23,6 +24,10 @@ export const router = createBrowserRouter([
       {
         path: "converters",
         element: <ConverterPage />,
+      },
+      {
+        path: "tanks/volume",
+        element: <TankVolumePage />,
       },
       // Legacy / alternative paths kept for backward compatibility
       {
