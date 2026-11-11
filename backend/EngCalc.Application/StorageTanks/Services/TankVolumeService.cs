@@ -31,9 +31,9 @@ public class TankVolumeService : ITankVolumeService
             }))
             .ToList();
 
-    public TankHeadOptionsDto GetOptions()
+    public TankOptionsDto GetOptions()
     {
-        return new TankHeadOptionsDto(TankHeadOptions, TankOrientationOptions);
+        return new TankOptionsDto(TankHeadOptions, TankOrientationOptions);
     }
 
     public Task<TankVolumeResponseDto> CalculateVolumeAsync(TankVolumeRequestDto request)

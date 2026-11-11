@@ -4,7 +4,7 @@ namespace EngCalc.Application.StorageTanks.Interfaces;
 
 public interface ITankVolumeService
 {
-    TankHeadOptionsDto GetOptions();
+    TankOptionsDto GetOptions();
     Task<TankVolumeResponseDto> CalculateVolumeAsync(TankVolumeRequestDto request);
 }
 
