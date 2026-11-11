@@ -147,6 +147,7 @@ public class VerticalCylindricalTankVolume : IGeometryVolume
         var head = HeadVolumeFactory.Create(headType, internalDiameter, headHeight, headAngle);
         var bottom = HeadVolumeFactory.Create(bottomType, internalDiameter, bottomHeight, bottomAngle);
         var body = new CylindricalBodyVolume(internalDiameter, internalBodyHeight);
+        double internalVolume = body.InternalVolume + head.InternalVolume + bottom.InternalVolume;
 
         double totalTankHeight = internalBodyHeight + head.HeadHeight + bottom.HeadHeight;
         if (productHeight > totalTankHeight)
@@ -158,19 +159,27 @@ public class VerticalCylindricalTankVolume : IGeometryVolume
 
         double bottomVolume = bottom.InternalVolume;
 
-        if (productHeight <= totalTankHeight )
+        if (productHeight <= bottom.HeadHeight)
         {
-            // Liquid is within the cylindrical body
-            double bodyLiquidVolume = new CylindricalBodyVolume(internalDiameter, productHeight).InternalVolume;
+            return bottom.CalculateVerticalProductVolume(productHeight);
+        }
+
+        double heightAboveBottom = productHeight - bottom.HeadHeight;
+
+        if (heightAboveBottom <= internalBodyHeight)
+        {
+            double bodyLiquidVolume =
+                new CylindricalBodyVolume(internalDiameter, heightAboveBottom).InternalVolume;
             return bottomVolume + bodyLiquidVolume;
         }
         else
         {
-            // Liquid completely fills the body shell and enters the top head
             double bodyLiquidVolume = body.InternalVolume;
-            double headLiquidHeight = productHeight - internalBodyHeight;
+            double headLiquidHeight = heightAboveBottom - internalBodyHeight;
             double headLiquidVolume = head.CalculateVerticalProductVolume(headLiquidHeight);
-            return bottomVolume + bodyLiquidVolume + headLiquidVolume;
+            return Math.Min(
+                bottomVolume + bodyLiquidVolume + headLiquidVolume,
+                internalVolume);
         }
     }
 }

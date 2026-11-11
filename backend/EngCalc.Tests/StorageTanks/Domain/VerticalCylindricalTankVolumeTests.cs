@@ -56,13 +56,77 @@ public class VerticalCylindricalTankVolumeTests
 
         var bodyVolume = Math.PI * 25 * 20;
         var bottomVolume = Math.PI * 25 * 5 / 3;
-        var productVolume = Math.PI * 25 * 8 + bottomVolume;
+        var productVolume = Math.PI * 25 * (8 - 5) + bottomVolume;
 
         Assert.Equal(bodyVolume, tank.BodyVolume);
         Assert.Equal(0, tank.HeadVolume);
         Assert.Equal(bottomVolume, tank.BottomVolume);
         Assert.Equal(bodyVolume + bottomVolume, tank.InternalVolume);
         Assert.Equal(productVolume, tank.ProductVolume);
+    }
+
+    [Fact]
+    public void ProductConstructor_ShouldNotExceedInternalVolume_WhenProductHeightExceedsBodyHeight()
+    {
+        var tank = new VerticalCylindricalTankVolume(
+            internalDiameter: 1000,
+            internalBodyHeight: 1000,
+            bottomType: HeadTanksTypes.Conical,
+            bottomHeight: null,
+            bottomAngle: 45,
+            headType: HeadTanksTypes.Flat,
+            headHeight: null,
+            headAngle: null,
+            productHeight: 1200);
+
+        Assert.Equal(
+            tank.BottomVolume + Math.PI * 500 * 500 * 700,
+            tank.ProductVolume,
+            1e-6);
+        Assert.True(tank.ProductVolume <= tank.InternalVolume);
+    }
+
+    [Fact]
+    public void ProductConstructor_ShouldFillBottomBodyAndPartialTopHead()
+    {
+        var tank = new VerticalCylindricalTankVolume(
+            internalDiameter: 1000,
+            internalBodyHeight: 1000,
+            bottomType: HeadTanksTypes.Conical,
+            bottomHeight: 200,
+            bottomAngle: null,
+            headType: HeadTanksTypes.Conical,
+            headHeight: 200,
+            headAngle: null,
+            productHeight: 1300);
+
+        var expectedBottomVolume = Math.PI * 500 * 500 * 200 / 3;
+        var expectedBodyVolume = Math.PI * 500 * 500 * 1000;
+        var expectedHeadVolume =
+            Math.PI * 500 * 500 * 200 / 3 * (1 - Math.Pow(1 - 100d / 200, 3));
+
+        Assert.Equal(
+            expectedBottomVolume + expectedBodyVolume + expectedHeadVolume,
+            tank.ProductVolume,
+            1e-6);
+        Assert.True(tank.ProductVolume < tank.InternalVolume);
+    }
+
+    [Fact]
+    public void ProductConstructor_ShouldMeasureProductHeightFromBottomOfTank()
+    {
+        var tank = new VerticalCylindricalTankVolume(
+            internalDiameter: 10,
+            internalBodyHeight: 20,
+            bottomType: HeadTanksTypes.Conical,
+            bottomHeight: 5,
+            bottomAngle: null,
+            headType: HeadTanksTypes.Flat,
+            headHeight: null,
+            headAngle: null,
+            productHeight: 5);
+
+        Assert.Equal(tank.BottomVolume, tank.ProductVolume, 1e-9);
     }
 
     [Theory]
@@ -136,7 +200,7 @@ public class VerticalCylindricalTankVolumeTests
             bottomHeight: 5,
             bottomAngle: null);
 
-        Assert.Equal(Math.PI * 25 * 8 + Math.PI * 25 * 5 / 3, result);
+        Assert.Equal(Math.PI * 25 * (8 - 5) + Math.PI * 25 * 5 / 3, result);
     }
 
     [Theory]
