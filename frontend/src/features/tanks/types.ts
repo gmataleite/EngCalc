@@ -1,24 +1,25 @@
 import type { SelectOption } from "@/types/common"
 
-export type TankHeadTypes = "Flat" | "Conical" | "Hemispherical" | "Ellipsoidal" | "Torispherical"
+export type TankHeadTypes =
+  "flat" | "conical" | "hemispherical" | "ellipsoidal" | "torispherical"
 
-export type TankOrientationTypes = "Horizontal" | "Vertical"
+export type TankOrientationTypes = "horizontal" | "vertical"
 
 export interface TankOptionsResponse {
-  TankHeadType: SelectOption[]
-  TankOrientation: SelectOption[]
+  tankHeadTypes: SelectOption[]
+  tankOrientationTypes: SelectOption[]
 }
 
 export interface TankVolumeRequest {
   internalDiameter: number
   internalBodyHeight: number
   bottomType: TankHeadTypes
-  bottomHeight: number
-  bottomAngle: number
+  bottomHeight: number | null
+  bottomAngle: number | null
   headType: TankHeadTypes
-  headHeight: number
-  headAngle: number
-  productHeight: number
+  headHeight: number | null
+  headAngle: number | null
+  productHeight: number | null
   tankOrientation: TankOrientationTypes
 }
 

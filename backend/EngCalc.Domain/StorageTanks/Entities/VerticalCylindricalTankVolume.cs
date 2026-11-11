@@ -76,7 +76,7 @@ public class VerticalCylindricalTankVolume : IGeometryVolume
         BottomVolume = bottom.InternalVolume;
         InternalVolume = CalculateInternalVolume();
 
-        TotalTankHeight = internalBodyHeight + head.HeadHeight;
+        TotalTankHeight = internalBodyHeight + head.HeadHeight + bottom.HeadHeight;
 
         if (productHeight.HasValue)
         {
@@ -148,7 +148,7 @@ public class VerticalCylindricalTankVolume : IGeometryVolume
         var bottom = HeadVolumeFactory.Create(bottomType, internalDiameter, bottomHeight, bottomAngle);
         var body = new CylindricalBodyVolume(internalDiameter, internalBodyHeight);
 
-        double totalTankHeight = internalBodyHeight + head.HeadHeight;
+        double totalTankHeight = internalBodyHeight + head.HeadHeight + bottom.HeadHeight;
         if (productHeight > totalTankHeight)
         {
             throw new ArgumentOutOfRangeException(
@@ -158,7 +158,7 @@ public class VerticalCylindricalTankVolume : IGeometryVolume
 
         double bottomVolume = bottom.InternalVolume;
 
-        if (productHeight <= internalBodyHeight)
+        if (productHeight <= totalTankHeight )
         {
             // Liquid is within the cylindrical body
             double bodyLiquidVolume = new CylindricalBodyVolume(internalDiameter, productHeight).InternalVolume;

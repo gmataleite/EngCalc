@@ -15,9 +15,6 @@ export async function fetchConverterOptions(): Promise<ConverterOptionsResponse>
 export async function calculateConverter(
   payload: ConverterRequest
 ): Promise<ConverterResponse> {
-  const { data } = await api.post<ConverterResponse>(
-    "/api/converters",
-    payload
-  )
+  const { data } = await api.post<ConverterResponse>("/api/converters", payload)
   return data
 }
