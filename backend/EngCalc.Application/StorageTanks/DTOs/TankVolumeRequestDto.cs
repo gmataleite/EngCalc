@@ -10,5 +10,5 @@ public record TankVolumeRequestDto(
         double? HeadHeight, 
         double? HeadAngle,
         double? ProductHeight,
-        double? Orientation
+        string TankOrientation
 );

@@ -7,7 +7,7 @@ using EngCalc.Domain.StorageTanks.Models;
 using EngCalc.Domain.StorageTanks.Enums;
 using EngCalc.Domain.StorageTanks.Factories;
 
-public class CylindricalTankVolume : IGeometryVolume
+public class VerticalCylindricalTankVolume : IGeometryVolume
 {
     public double BodyVolume { get; private set; }
     public double HeadVolume { get; private set; }
@@ -23,7 +23,7 @@ public class CylindricalTankVolume : IGeometryVolume
     /// </summary>
     public bool ExceedsWeldSeamLine { get; private set; }
 
-    public CylindricalTankVolume(double bodyVolume, double headVolume, double bottomVolume)
+    public VerticalCylindricalTankVolume(double bodyVolume, double headVolume, double bottomVolume)
     {
         BodyVolume = bodyVolume;
         HeadVolume = headVolume;
@@ -31,7 +31,7 @@ public class CylindricalTankVolume : IGeometryVolume
         InternalVolume = CalculateInternalVolume();
     }
 
-    public CylindricalTankVolume(
+    public VerticalCylindricalTankVolume(
         double internalDiameter, 
         double internalBodyHeight, 
         HeadTanksTypes bottomType, 
@@ -53,7 +53,7 @@ public class CylindricalTankVolume : IGeometryVolume
     {
     }
 
-    public CylindricalTankVolume(
+    public VerticalCylindricalTankVolume(
         double internalDiameter, 
         double internalBodyHeight, 
         HeadTanksTypes bottomType, 

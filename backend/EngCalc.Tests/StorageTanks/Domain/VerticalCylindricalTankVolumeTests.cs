@@ -3,12 +3,12 @@ using EngCalc.Domain.StorageTanks.Enums;
 
 namespace EngCalc.Tests.StorageTanks;
 
-public class CylindricalTankVolumeTests
+public class VerticalCylindricalTankVolumeTests
 {
     [Fact]
     public void VolumeConstructor_ShouldCalculateInternalVolume()
     {
-        var tank = new CylindricalTankVolume(10, 20, 30);
+        var tank = new VerticalCylindricalTankVolume(10, 20, 30);
 
         Assert.Equal(10, tank.BodyVolume);
         Assert.Equal(20, tank.HeadVolume);
@@ -20,7 +20,7 @@ public class CylindricalTankVolumeTests
     [Fact]
     public void GeometricConstructor_ShouldCalculateBodyHeadBottomAndInternalVolumes()
     {
-        var tank = new CylindricalTankVolume(
+        var tank = new VerticalCylindricalTankVolume(
             internalDiameter: 10,
             internalBodyHeight: 20,
             bottomType: HeadTanksTypes.Flat,
@@ -43,7 +43,7 @@ public class CylindricalTankVolumeTests
     [Fact]
     public void ProductConstructor_ShouldCalculateProductVolume()
     {
-        var tank = new CylindricalTankVolume(
+        var tank = new VerticalCylindricalTankVolume(
             internalDiameter: 10,
             internalBodyHeight: 20,
             bottomType: HeadTanksTypes.Conical,
@@ -77,7 +77,7 @@ public class CylindricalTankVolumeTests
         double? angle,
         double expected)
     {
-        var result = CylindricalTankVolume.CalculateHeadVolume(type, 10, height, angle);
+        var result = VerticalCylindricalTankVolume.CalculateHeadVolume(type, 10, height, angle);
 
         Assert.Equal(expected, result);
     }
@@ -85,7 +85,7 @@ public class CylindricalTankVolumeTests
     [Fact]
     public void CalculateHeadVolume_ShouldSupportSphericalAlias()
     {
-        var result = CylindricalTankVolume.CalculateHeadVolume(HeadTanksTypes.Spherical, 10, null, null);
+        var result = VerticalCylindricalTankVolume.CalculateHeadVolume(HeadTanksTypes.Spherical, 10, null, null);
         Assert.Equal(Math.PI * 125 * 2 / 3, result);
     }
 
@@ -94,7 +94,7 @@ public class CylindricalTankVolumeTests
     {
         var angle = Math.Atan(5 / 5d) * 180 / Math.PI;
 
-        var result = CylindricalTankVolume.CalculateHeadVolume(
+        var result = VerticalCylindricalTankVolume.CalculateHeadVolume(
             HeadTanksTypes.Conical, 10, null, angle);
 
         Assert.Equal(Math.PI * 25 * 5 / 3, result);
@@ -112,7 +112,7 @@ public class CylindricalTankVolumeTests
     {
         double? height = type == HeadTanksTypes.Conical ? 5 : null;
 
-        var result = CylindricalTankVolume.CalculateBottomVolume(
+        var result = VerticalCylindricalTankVolume.CalculateBottomVolume(
             type, 10, height, null);
 
         Assert.Equal(expected, result);
@@ -121,7 +121,7 @@ public class CylindricalTankVolumeTests
     [Fact]
     public void CalculateInternalVolume_ShouldReturnSumOfParts()
     {
-        var tank = new CylindricalTankVolume(10, 20, 30);
+        var tank = new VerticalCylindricalTankVolume(10, 20, 30);
 
         Assert.Equal(60, tank.CalculateInternalVolume());
     }
@@ -129,7 +129,7 @@ public class CylindricalTankVolumeTests
     [Fact]
     public void CalculateProductVolume_ShouldReturnBodyAndBottomVolume()
     {
-        var result = CylindricalTankVolume.CalculateProductVolume(
+        var result = VerticalCylindricalTankVolume.CalculateProductVolume(
             internalDiameter: 10,
             productHeight: 8,
             bottomType: HeadTanksTypes.Conical,
@@ -150,7 +150,7 @@ public class CylindricalTankVolumeTests
         string parameterName)
     {
         var exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new CylindricalTankVolume(
+            new VerticalCylindricalTankVolume(
                 diameter,
                 bodyHeight,
                 HeadTanksTypes.Flat,
@@ -169,7 +169,7 @@ public class CylindricalTankVolumeTests
     public void ProductConstructor_ShouldThrowForInvalidProductHeight(double productHeight)
     {
         var exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new CylindricalTankVolume(
+            new VerticalCylindricalTankVolume(
                 10,
                 20,
                 HeadTanksTypes.Flat,
@@ -187,7 +187,7 @@ public class CylindricalTankVolumeTests
     public void ProductConstructor_WhenLiquidExceedsBodyHeight_ShouldFillIntoTopHeadAndFlagExceedsWeldSeamLine()
     {
         // Tank with diameter 10 (R=5), body height 20, hemispherical top head (head height 5). Total height = 25.
-        var tank = new CylindricalTankVolume(
+        var tank = new VerticalCylindricalTankVolume(
             internalDiameter: 10,
             internalBodyHeight: 20,
             bottomType: HeadTanksTypes.Flat,
@@ -211,7 +211,7 @@ public class CylindricalTankVolumeTests
     public void ProductConstructor_WhenLiquidFillsToTop_ShouldEqualInternalVolume()
     {
         // Total tank height = 20 + 5 = 25
-        var tank = new CylindricalTankVolume(
+        var tank = new VerticalCylindricalTankVolume(
             internalDiameter: 10,
             internalBodyHeight: 20,
             bottomType: HeadTanksTypes.Flat,
@@ -231,7 +231,7 @@ public class CylindricalTankVolumeTests
     {
         // Total tank height = 20 + 5 = 25. Passing 25.1 must throw.
         var exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new CylindricalTankVolume(
+            new VerticalCylindricalTankVolume(
                 internalDiameter: 10,
                 internalBodyHeight: 20,
                 bottomType: HeadTanksTypes.Flat,
@@ -250,7 +250,7 @@ public class CylindricalTankVolumeTests
     public void CalculateHeadVolume_ShouldThrowForInvalidType()
     {
         Assert.Throws<ArgumentException>(() =>
-            CylindricalTankVolume.CalculateHeadVolume(
+            VerticalCylindricalTankVolume.CalculateHeadVolume(
                 (HeadTanksTypes)999, 10, null, null));
     }
 
@@ -258,7 +258,7 @@ public class CylindricalTankVolumeTests
     public void CalculateBottomVolume_ShouldThrowForInvalidType()
     {
         Assert.Throws<ArgumentException>(() =>
-            CylindricalTankVolume.CalculateBottomVolume(
+            VerticalCylindricalTankVolume.CalculateBottomVolume(
                 (HeadTanksTypes)999, 10, null, null));
     }
 
@@ -268,7 +268,7 @@ public class CylindricalTankVolumeTests
     public void CalculateHeadVolume_ShouldThrowForInvalidDiameter(double diameter)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            CylindricalTankVolume.CalculateHeadVolume(
+            VerticalCylindricalTankVolume.CalculateHeadVolume(
                 HeadTanksTypes.Flat, diameter, null, null));
     }
 
@@ -280,7 +280,7 @@ public class CylindricalTankVolumeTests
         double? angle)
     {
         Assert.Throws<ArgumentException>(() =>
-            CylindricalTankVolume.CalculateHeadVolume(
+            VerticalCylindricalTankVolume.CalculateHeadVolume(
                 HeadTanksTypes.Conical, 10, height, angle));
     }
 
@@ -288,7 +288,7 @@ public class CylindricalTankVolumeTests
     public void CalculateProductVolume_ShouldThrowForInvalidProductHeight()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            CylindricalTankVolume.CalculateProductVolume(
+            VerticalCylindricalTankVolume.CalculateProductVolume(
                 10, 0, HeadTanksTypes.Flat, null, null));
     }
 }
